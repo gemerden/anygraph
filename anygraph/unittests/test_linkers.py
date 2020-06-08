@@ -1,0 +1,253 @@
+import unittest
+
+from anygraph import One, Many
+
+
+class TestLinkers(unittest.TestCase):
+
+    def test_one_one(self):
+        class TestOne(object):
+            left = One('right')
+            right = One('left')
+
+            def __init__(self, name):
+                self.name = name
+
+        bob = TestOne('bob')
+        ann = TestOne('ann')
+
+        bob.left = ann
+        assert bob.left is ann
+        assert ann.right is bob
+
+        assert list(TestOne.left.iterate(bob)) == [bob, ann]
+
+        del bob.left
+        assert bob.left is None
+        assert ann.right is None
+
+        bob.left = ann
+        ann.right = None
+        assert bob.left is None
+        assert ann.right is None
+
+        bob.left = bob
+        assert bob.left is bob
+        assert bob.right is bob
+
+        del bob.left
+        assert bob.left is None
+        assert bob.right is None
+
+    def test_triangle(self):
+        class TestOne(object):
+            next = One('prev')
+            prev = One('next')
+
+            def __init__(self, name):
+                self.name = name
+
+        bob = TestOne('bob')
+        ann = TestOne('ann')
+        kik = TestOne('kik')
+
+        bob.next = ann
+        ann.next = kik
+        kik.next = bob
+
+        assert bob.next is ann
+        assert ann.next is kik
+        assert kik.next is bob
+
+        assert bob.prev is kik
+        assert kik.prev is ann
+        assert ann.prev is bob
+
+        assert list(TestOne.next.iterate(bob)) == [bob, ann, kik]
+
+        del ann.prev
+
+        assert ann.prev is None
+        assert bob.next is None
+        assert ann.next is kik
+        assert kik.next is bob
+
+    def test_many_many(self):
+        class TestMany(object):
+            nexts = Many('prevs')
+            prevs = Many('nexts')
+
+            def __init__(self, name):
+                self.name = name
+
+        bob = TestMany('bob')
+        ann = TestMany('ann')
+        pete = TestMany('pete')
+        howy = TestMany('howy')
+
+        bob.nexts.update([ann, pete])
+        pete.nexts.add(howy)
+
+        assert ann in bob.nexts
+        assert bob in ann.prevs
+        assert howy in pete.nexts
+        assert howy not in bob.nexts
+
+        assert list(TestMany.nexts.iterate(bob)) == [bob, ann, pete, howy]
+
+    def test_one_many(self):
+        class TestOneMany(object):
+            parent = One('children')
+            children = Many('parent')
+
+            def __init__(self, name):
+                self.name = name
+
+        bob = TestOneMany('bob')
+        ann = TestOneMany('ann')
+        pete = TestOneMany('pete')
+        howy = TestOneMany('howy')
+
+        bob.children = [ann, pete]
+        howy.parent = pete
+
+        assert ann in bob.children
+        assert bob is ann.parent
+        assert howy in pete.children
+        assert howy not in bob.children
+        assert howy.parent.parent is bob
+
+        assert list(TestOneMany.children.iterate(bob)) == [bob, ann, pete, howy]
+        assert list(TestOneMany.parent.iterate(howy)) == [howy, pete, bob]
+
+        del bob.children
+
+        assert ann not in bob.children
+        assert bob is not ann.parent
+        assert howy.parent.parent is None
+
+    def test_pairs(self):
+        class Test(object):
+            other = One('other')
+
+            def __init__(self, name):
+                self.name = name
+
+            def __str__(self):
+                return self.name
+
+        bob = Test('bob')
+        ann = Test('ann')
+        kik = Test('kik')
+
+        bob.other = ann
+        assert bob.other is ann
+        assert ann.other is bob
+
+        assert list(Test.other.iterate(bob)) == [bob, ann]
+
+        kik.other = ann
+        assert bob.other is None
+        assert kik.other is ann
+        assert ann.other is kik
+
+    def test_non_directed(self):
+        class Test(object):
+            others = Many('others')
+
+            def __init__(self, name):
+                self.name = name
+
+            def __str__(self):
+                return self.name
+
+        bob = Test('bob')
+        ann = Test('ann')
+        kik = Test('kik')
+
+        bob.others.add(ann)
+        bob.others.add(kik)
+        assert ann in bob.others
+        assert kik in bob.others
+        assert bob in ann.others
+        assert bob in kik.others
+
+        kik.others.add(ann)
+        assert kik in ann.others
+        assert ann in kik.others
+        assert ann in bob.others
+        assert kik in bob.others
+        assert bob in ann.others
+        assert bob in kik.others
+
+        assert list(Test.others.iterate(bob)) == [bob, ann, kik]
+
+        kik.others.remove(ann)
+        assert kik not in ann.others
+        assert ann not in kik.others
+        assert ann in bob.others
+        assert kik in bob.others
+        assert bob in ann.others
+        assert bob in kik.others
+
+    def test_on_link(self):
+        on_link_results = []
+        on_unlink_results = []
+
+        def on_link(one, two):
+            on_link_results.append((one, two))
+
+        def on_unlink(one, two):
+            on_unlink_results.append((one, two))
+
+        class TestMany(object):
+            nexts = Many('prevs', on_link=on_link, on_unlink=on_unlink)
+            prevs = Many('nexts')
+
+            def __init__(self, name):
+                self.name = name
+
+        bob = TestMany('bob')
+        ann = TestMany('ann')
+        pete = TestMany('pete')
+        howy = TestMany('howy')
+
+        bob.nexts.update([ann, pete])
+        pete.nexts.add(howy)
+
+        assert on_link_results == [(bob, ann), (bob, pete), (pete, howy)]
+
+        del bob.nexts
+        assert on_unlink_results == [(bob, ann), (bob, pete)]
+
+    def test_visitor(self):
+        class TestMany(object):
+            nexts = Many('prevs')
+            prevs = Many('nexts')
+
+            def __init__(self, name):
+                self.name = name
+
+        bob = TestMany('bob')
+        ann = TestMany('ann')
+        pete = TestMany('pete')
+        howy = TestMany('howy')
+
+        bob.nexts.update([ann, pete])
+        ann.nexts.add(howy)
+        pete.nexts.add(howy)
+
+        people = []
+
+        def on_visit(obj):
+            people.append(obj)
+
+        TestMany.nexts.visit(bob, on_visit=on_visit, breadth_first=False)
+        assert people == [bob, ann, howy, pete]
+
+        del people[:]
+        TestMany.nexts.visit(bob, on_visit=on_visit, breadth_first=True)
+        assert people == [bob, ann, pete, howy]
+
+
+
