@@ -1,6 +1,7 @@
 from collections.abc import MutableSet
 from operator import attrgetter
 
+from anygraph.tools import unique_name
 from anygraph.visitors import Iterator, Visitor
 
 
@@ -24,13 +25,13 @@ class DelegateSet(MutableSet):
 
     def add(self, target):
         if self.get_id(target) not in self.targets:
-            self.linker.on_link(self.owner, target)
-            self.linker.link(self.owner, target)
+            self.linker._on_link(self.owner, target)
+            self.linker._link(self.owner, target)
 
     def discard(self, target):
         if self.get_id(target) in self.targets:
-            self.linker.unlink(self.owner, target)
-            self.linker.on_unlink(self.owner, target)
+            self.linker._unlink(self.owner, target)
+            self.linker._on_unlink(self.owner, target)
 
     def update(self, targets):
         for target in targets:
@@ -90,8 +91,8 @@ class BaseLinker(object):
 
     def __init__(self, target_name, on_link=None, on_unlink=None):
         self.target_name = target_name
-        self._on_link = on_link
-        self._on_unlink = on_unlink
+        self._do_on_link = on_link
+        self._do_on_unlink = on_unlink
         self.name = None
 
     def __set_name__(self, cls, name):
@@ -105,36 +106,50 @@ class BaseLinker(object):
         except KeyError:
             return self._init(obj)
 
-    def iterate(self, start_obj, repeat=False, breadth_first=False):
-        iterator = Iterator(self.name, repeat=repeat)
-        yield from iterator.iterate(start_obj, breadth_first=breadth_first)
+    def iterate(self, start_obj, cycle=False, breadth_first=False):
+        iterator = Iterator(self.name)
+        yield from iterator.iterate(start_obj, cycle=cycle, breadth_first=breadth_first)
 
-    def visit(self, start_obj, on_visit, repeat=False, breadth_first=False):
-        visitor = Visitor(self.name, repeat=repeat)
-        return visitor(start_obj, on_visit, breadth_first=breadth_first)
+    def visit(self, start_obj, on_visit, cycle=False, breadth_first=False):
+        visitor = Visitor(self.name)
+        return visitor(start_obj, on_visit, cycle=cycle, breadth_first=breadth_first)
 
-    def other(self, target):
+    def reachable(self, start_obj, target_obj):
+        for obj in self.iterate(start_obj, cycle=True, breadth_first=True):
+            if obj is target_obj:
+                return True
+        return False
+
+    def in_cycle(self, start_obj):
+        return self.reachable(start_obj, start_obj)
+
+    def shortest_path(self, start_obj, target_obj, get_cost=None, heuristic=None):
+        return Iterator(self.name).shortest_path(start_obj, target_obj,
+                                                 get_cost=get_cost,
+                                                 heuristic=heuristic)
+
+    def _other(self, target):
         return getattr(target.__class__, self.target_name)
 
-    def on_link(self, obj, target, _remote=False):
-        if self._on_link:
-            return self._on_link(obj, target)
+    def _on_link(self, obj, target, _remote=False):
+        if self._do_on_link:
+            return self._do_on_link(obj, target)
         if not _remote:
-            return self.other(target).on_link(target, obj, True)
+            return self._other(target)._on_link(target, obj, True)
 
-    def on_unlink(self, obj, target, _remote=False):
-        if self._on_unlink:
-            return self._on_unlink(obj, target)
+    def _on_unlink(self, obj, target, _remote=False):
+        if self._do_on_unlink:
+            return self._do_on_unlink(obj, target)
         if not _remote:
-            return self.other(target).on_unlink(target, obj, True)
+            return self._other(target)._on_unlink(target, obj, True)
 
-    def link(self, obj, target):
-        self.other(target)._set(target, obj)
+    def _link(self, obj, target):
+        self._other(target)._set(target, obj)
         self._set(obj, target)
 
-    def unlink(self, obj, target=None):
+    def _unlink(self, obj, target=None):
         if target is not None:
-            self.other(target)._del(target, obj)
+            self._other(target)._del(target, obj)
             self._del(obj, target)
 
     def _init(self, obj):
@@ -150,16 +165,16 @@ class BaseLinker(object):
 class One(BaseLinker):
 
     def __set__(self, obj, target):
-        self.unlink(obj)
+        self._unlink(obj)
         if target is not None:
-            self.other(target).unlink(target)
-            self.on_link(obj, target)
-            self.link(obj, target)
+            self._other(target)._unlink(target)
+            self._on_link(obj, target)
+            self._link(obj, target)
 
     def __delete__(self, obj):
         target = self.__get__(obj)
-        self.unlink(obj, target)
-        self.on_unlink(obj, target)
+        self._unlink(obj, target)
+        self._on_unlink(obj, target)
 
     def _init(self, obj):
         obj.__dict__[self.name] = None
@@ -170,10 +185,10 @@ class One(BaseLinker):
     def _del(self, obj, target):
         obj.__dict__[self.name] = None
 
-    def unlink(self, obj, target=None):
+    def _unlink(self, obj, target=None):
         if target is None:
             target = self.__get__(obj)
-        super().unlink(obj, target)
+        super()._unlink(obj, target)
 
 
 
