@@ -2,22 +2,11 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="b30b3cd0-a65e-4eee-a702-e2c47f9abf8f" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/anygraph/demos/chain.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/anygraph/demos/directed_graph.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/anygraph/demos/non_directed_graph.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/anygraph/demos/shortest_path.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/anygraph/demos/tree_graph.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/anygraph/demos/visit.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/anygraph/recipes/from_matrix.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/anygraph/recipes/shortest_path_in_grid.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/setup.cfg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/anygraph/demos/utilities.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/LICENSE" beforeDir="false" afterPath="$PROJECT_DIR$/LICENSE" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anygraph/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/anygraph/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anygraph/linkers.py" beforeDir="false" afterPath="$PROJECT_DIR$/anygraph/linkers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anygraph/tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/anygraph/tools.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anygraph/unittests/test_visitors.py" beforeDir="false" afterPath="$PROJECT_DIR$/anygraph/unittests/test_visitors.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anygraph/unittests/test_linkers.py" beforeDir="false" afterPath="$PROJECT_DIR$/anygraph/unittests/test_linkers.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anygraph/visitors.py" beforeDir="false" afterPath="$PROJECT_DIR$/anygraph/visitors.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -55,49 +44,7 @@
       <recent name="D:\documents\_Code_\_repos_\anygraph\anygraph" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.shortest_path">
-    <configuration name="from_matrix" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="anygraph" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/anygraph/recipes" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/anygraph/recipes/from_matrix.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="scratch_30" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="anygraph" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$APPLICATION_CONFIG_DIR$/scratches" />
-      <option name="IS_MODULE_SDK" value="false" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$APPLICATION_CONFIG_DIR$/scratches/scratch_30.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
+  <component name="RunManager" selected="Python tests.Unittests in test_linkers.py">
     <configuration name="shortest_path" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="anygraph" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -119,7 +66,28 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="Unittests in test_visitors.py" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
+    <configuration name="utilities" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="anygraph" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/anygraph/demos" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/anygraph/demos/utilities.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Unittests for test_linkers.TestLinkers.test_cyclic" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
       <module name="anygraph" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -129,7 +97,21 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;$PROJECT_DIR$/anygraph/unittests/test_visitors.py&quot;" />
+      <option name="_new_target" value="&quot;test_linkers.TestLinkers.test_cyclic&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Unittests in test_linkers.py" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
+      <module name="anygraph" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/anygraph/unittests" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/anygraph/unittests/test_linkers.py&quot;" />
       <option name="_new_targetType" value="&quot;PATH&quot;" />
       <method v="2" />
     </configuration>
@@ -149,11 +131,11 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.shortest_path" />
-        <item itemvalue="Python.scratch_30" />
+        <item itemvalue="Python tests.Unittests in test_linkers.py" />
         <item itemvalue="Python tests.Unittests in unittests" />
-        <item itemvalue="Python.from_matrix" />
-        <item itemvalue="Python tests.Unittests in test_visitors.py" />
+        <item itemvalue="Python tests.Unittests for test_linkers.TestLinkers.test_cyclic" />
+        <item itemvalue="Python.utilities" />
+        <item itemvalue="Python.shortest_path" />
       </list>
     </recent_temporary>
   </component>
@@ -171,29 +153,44 @@
     <servers />
   </component>
   <component name="WindowStateProjectService">
+    <state x="1238" y="0" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog" timestamp="1591785264536">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state x="1238" y="0" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog/0.0.3440.1400@0.0.3440.1400" timestamp="1591785264536" />
     <state x="1475" y="402" key="#xdebugger.evaluate" timestamp="1591709723015">
       <screen x="0" y="0" width="3440" height="1400" />
     </state>
     <state x="1475" y="402" key="#xdebugger.evaluate/0.0.3440.1400@0.0.3440.1400" timestamp="1591709723015" />
-    <state width="3397" height="502" key="GridCell.Tab.0.bottom" timestamp="1591714479075">
+    <state width="3397" height="502" key="GridCell.Tab.0.bottom" timestamp="1591785243949">
       <screen x="0" y="0" width="3440" height="1400" />
     </state>
-    <state width="3397" height="502" key="GridCell.Tab.0.bottom/0.0.3440.1400@0.0.3440.1400" timestamp="1591714479075" />
-    <state width="3397" height="502" key="GridCell.Tab.0.center" timestamp="1591714479075">
+    <state width="3397" height="502" key="GridCell.Tab.0.bottom/0.0.3440.1400@0.0.3440.1400" timestamp="1591785243949" />
+    <state width="3397" height="502" key="GridCell.Tab.0.center" timestamp="1591785243949">
       <screen x="0" y="0" width="3440" height="1400" />
     </state>
-    <state width="3397" height="502" key="GridCell.Tab.0.center/0.0.3440.1400@0.0.3440.1400" timestamp="1591714479075" />
-    <state width="3397" height="502" key="GridCell.Tab.0.left" timestamp="1591714479074">
+    <state width="3397" height="502" key="GridCell.Tab.0.center/0.0.3440.1400@0.0.3440.1400" timestamp="1591785243949" />
+    <state width="3397" height="502" key="GridCell.Tab.0.left" timestamp="1591785243949">
       <screen x="0" y="0" width="3440" height="1400" />
     </state>
-    <state width="3397" height="502" key="GridCell.Tab.0.left/0.0.3440.1400@0.0.3440.1400" timestamp="1591714479074" />
-    <state width="3397" height="502" key="GridCell.Tab.0.right" timestamp="1591714479075">
+    <state width="3397" height="502" key="GridCell.Tab.0.left/0.0.3440.1400@0.0.3440.1400" timestamp="1591785243949" />
+    <state width="3397" height="502" key="GridCell.Tab.0.right" timestamp="1591785243949">
       <screen x="0" y="0" width="3440" height="1400" />
     </state>
-    <state width="3397" height="502" key="GridCell.Tab.0.right/0.0.3440.1400@0.0.3440.1400" timestamp="1591714479075" />
+    <state width="3397" height="502" key="GridCell.Tab.0.right/0.0.3440.1400@0.0.3440.1400" timestamp="1591785243949" />
     <state x="1426" y="433" width="587" height="534" key="find.popup" timestamp="1591699626727">
       <screen x="0" y="0" width="3440" height="1400" />
     </state>
     <state x="1426" y="433" width="587" height="534" key="find.popup/0.0.3440.1400@0.0.3440.1400" timestamp="1591699626727" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/anygraph/unittests/test_linkers.py</url>
+          <line>209</line>
+          <option name="timeStamp" value="10" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>
