@@ -2,7 +2,7 @@ from collections.abc import MutableSet
 from operator import attrgetter
 
 from anygraph.tools import unique_name
-from anygraph.visitors import Iterator, Visitor
+from anygraph.visitors import Iterator, Visitor, Found
 
 
 class DelegateSet(MutableSet):
@@ -24,12 +24,13 @@ class DelegateSet(MutableSet):
         return self.get_id(target) in self.targets
 
     def add(self, target):
-        if self.get_id(target) not in self.targets:
+        if target is not None and self.get_id(target) not in self.targets:
+            self.linker.check_cycle(self.owner, target)
             self.linker._on_link(self.owner, target)
             self.linker._link(self.owner, target)
 
     def discard(self, target):
-        if self.get_id(target) in self.targets:
+        if target is not None and self.get_id(target) in self.targets:
             self.linker._unlink(self.owner, target)
             self.linker._on_unlink(self.owner, target)
 
@@ -89,11 +90,31 @@ class DelegateNamedMap(DelegateMap):
 
 class BaseLinker(object):
 
-    def __init__(self, target_name, on_link=None, on_unlink=None):
+    def __init__(self, target_name, cyclic=True, on_link=None, on_unlink=None):
         self.target_name = target_name
+        self.cyclic = cyclic
         self._do_on_link = on_link
         self._do_on_unlink = on_unlink
         self.name = None
+
+    def existing(self, obj, target):
+        raise NotImplementedError
+
+    def creates_cycle(self, obj, target):
+        if obj is target:
+            return True
+        if self.name == self.target_name:
+            return True
+        if target is None:
+            return False
+        if self.existing(obj, target):
+            return False
+        return self.reachable(target, obj)
+
+    def check_cycle(self, obj, target):
+        if target is not None and not (self.cyclic and self._other(target).cyclic):
+            if self.creates_cycle(obj, target):
+                raise ValueError(f"setting '{self.name}' in {obj.__class__.__name__} creates cycle: 'cyclic' is set to False")
 
     def __set_name__(self, cls, name):
         self.name = name
@@ -114,11 +135,19 @@ class BaseLinker(object):
         visitor = Visitor(self.name)
         return visitor(start_obj, on_visit, cycle=cycle, breadth_first=breadth_first)
 
+    def build(self, start_obj, key='__iter__'):
+        build_on_visit = self._build_on_visit(key)
+        self.visit(start_obj, on_visit=build_on_visit, breadth_first=True)
+
     def reachable(self, start_obj, target_obj):
-        for obj in self.iterate(start_obj, cycle=True, breadth_first=True):
-            if obj is target_obj:
+        iterator = Iterator(self.name)
+        for obj in Iterator(self.name).iterate(start_obj):
+            if target_obj in iterator.iter_object(obj):
                 return True
         return False
+
+    def random_walk(self, start_obj):
+        yield from Iterator(self.name).random_walk(start_obj)
 
     def in_cycle(self, start_obj):
         return self.reachable(start_obj, start_obj)
@@ -130,6 +159,15 @@ class BaseLinker(object):
 
     def _other(self, target):
         return getattr(target.__class__, self.target_name)
+
+    def _link(self, obj, target):
+        self._set(obj, target)
+        self._other(target)._set(target, obj)
+
+    def _unlink(self, obj, target=None):
+        if target is not None:
+            self._other(target)._del(target, obj)
+            self._del(obj, target)
 
     def _on_link(self, obj, target, _remote=False):
         if self._do_on_link:
@@ -143,15 +181,6 @@ class BaseLinker(object):
         if not _remote:
             return self._other(target)._on_unlink(target, obj, True)
 
-    def _link(self, obj, target):
-        self._other(target)._set(target, obj)
-        self._set(obj, target)
-
-    def _unlink(self, obj, target=None):
-        if target is not None:
-            self._other(target)._del(target, obj)
-            self._del(obj, target)
-
     def _init(self, obj):
         raise NotImplementedError
 
@@ -161,10 +190,14 @@ class BaseLinker(object):
     def _del(self, obj, target):
         raise NotImplementedError
 
+    def _build_on_visit(self, key, wrapper_class):
+        raise NotImplementedError
+
 
 class One(BaseLinker):
 
     def __set__(self, obj, target):
+        self.check_cycle(obj, target)
         self._unlink(obj)
         if target is not None:
             self._other(target)._unlink(target)
@@ -175,6 +208,19 @@ class One(BaseLinker):
         target = self.__get__(obj)
         self._unlink(obj, target)
         self._on_unlink(obj, target)
+
+    def existing(self, obj, target):
+        return target is not None and self.__get__(obj) is target
+
+    def _build_on_visit(self, key):
+        def visit(obj):
+            if callable(key):
+                value = key(obj)
+            else:
+                value = getattr(obj, key)
+            setattr(obj, self.name, value)
+
+        return visit
 
     def _init(self, obj):
         obj.__dict__[self.name] = None
@@ -200,6 +246,17 @@ class BaseMany(BaseLinker):
 
     def __delete__(self, obj):
         self.__get__(obj).clear()
+
+    def existing(self, obj, target):
+        return target is not None and target in self.__get__(obj)
+
+    def _build_on_visit(self, key):
+        def visit(obj, iter=key):
+            if isinstance(iter, str):
+                iter = getattr(obj.__class__, iter)
+            for value in iter(obj):
+                getattr(obj, self.name).add(value)
+        return visit
 
     def _init(self, obj):
         delegate = obj.__dict__[self.name] = self.many_class(obj, linker=self)

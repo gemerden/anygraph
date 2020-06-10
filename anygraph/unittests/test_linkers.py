@@ -190,6 +190,30 @@ class TestLinkers(unittest.TestCase):
         assert bob in ann.others
         assert bob in kik.others
 
+    def test_cyclic(self):
+        class TestMany(object):
+            nexts = Many('prevs', cyclic=False)
+            prevs = Many('nexts')
+
+            def __init__(self, name):
+                self.name = name
+
+        bob = TestMany('bob')
+        ann = TestMany('ann')
+        pete = TestMany('pete')
+        howy = TestMany('howy')
+
+        bob.nexts.update([ann, pete])
+        pete.nexts.add(howy)
+
+        with self.assertRaises(ValueError):
+            howy.nexts.add(bob)
+
+        with self.assertRaises(ValueError):
+            bob.prevs.add(howy)
+
+
+
     def test_on_link(self):
         on_link_results = []
         on_unlink_results = []
@@ -248,6 +272,118 @@ class TestLinkers(unittest.TestCase):
         del people[:]
         TestMany.nexts.visit(bob, on_visit=on_visit, breadth_first=True)
         assert people == [bob, ann, pete, howy]
+
+    def test_builder_many_by_name(self):
+
+        class TestBuilder(object):
+            nexts = Many('prevs')
+            prevs = Many('nexts')
+
+            def __init__(self, name, iterable=()):
+                self.name = name
+                self.items = list(iterable)
+
+            def extend(self, *items):
+                self.items.extend(items)
+
+            def __iter__(self):
+                for item in self.items:
+                    yield item
+
+            def __str__(self):
+                return self.name
+
+
+
+        bob = TestBuilder('bob')
+        ann = TestBuilder('ann')
+        pete = TestBuilder('pete')
+        howy = TestBuilder('howy')
+
+        bob.extend(ann, pete)
+        pete.extend(howy, bob)
+        ann.extend(pete)
+        howy.extend(ann)
+
+        assert bob.nexts == set()
+        assert ann.prevs == set()
+
+        TestBuilder.nexts.build(bob)
+
+        assert bob.nexts == {ann, pete}
+        assert ann.prevs == {bob, howy}
+        assert howy.nexts == {ann}
+        assert howy.prevs == {pete}
+
+    def test_builder_many_by_func(self):
+
+        class TestBuilder(object):
+            nexts = Many('prevs')
+            prevs = Many('nexts')
+
+            def __init__(self, name, iterable=()):
+                self.name = name
+                self.items = list(iterable)
+
+            def extend(self, *items):
+                self.items.extend(items)
+
+            def __str__(self):
+                return self.name
+
+
+
+        bob = TestBuilder('bob')
+        ann = TestBuilder('ann')
+        pete = TestBuilder('pete')
+        howy = TestBuilder('howy')
+
+        bob.extend(ann, pete)
+        pete.extend(howy, bob)
+        ann.extend(pete)
+        howy.extend(ann)
+
+        assert bob.nexts == set()
+        assert ann.prevs == set()
+
+        TestBuilder.nexts.build(bob, key=lambda obj: obj.items)
+
+        assert bob.nexts == {ann, pete}
+        assert ann.prevs == {bob, howy}
+        assert howy.nexts == {ann}
+        assert howy.prevs == {pete}
+
+    def test_builder_one(self):
+
+        class TestBuilder(object):
+            next = One('prev')
+            prev = One('next')
+
+            def __init__(self, name, other=None):
+                self.name = name
+                self.other = other
+
+            def __str__(self):
+                return self.name
+
+        bob = TestBuilder('bob')
+        ann = TestBuilder('ann')
+        pip = TestBuilder('pip')
+
+        bob.other = ann
+        ann.other = pip
+
+        assert bob.next is None
+        assert ann.prev is None
+
+        TestBuilder.next.build(bob, 'other')
+
+        assert bob.next == ann
+        assert ann.prev == bob
+        assert ann.next == pip
+        assert pip.prev == ann
+
+
 
 
 
