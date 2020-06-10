@@ -25,7 +25,7 @@ class DelegateSet(MutableSet):
 
     def add(self, target):
         if target is not None and self.get_id(target) not in self.targets:
-            self.linker.check_cycle(self.owner, target)
+            self.linker._check(self.owner, target)
             self.linker._on_link(self.owner, target)
             self.linker._link(self.owner, target)
 
@@ -90,9 +90,10 @@ class DelegateNamedMap(DelegateMap):
 
 class BaseLinker(object):
 
-    def __init__(self, target_name, cyclic=True, on_link=None, on_unlink=None):
+    def __init__(self, target_name, cyclic=True, to_self=True, on_link=None, on_unlink=None):
         self.target_name = target_name
         self.cyclic = cyclic
+        self.to_self = to_self
         self._do_on_link = on_link
         self._do_on_unlink = on_unlink
         self.name = None
@@ -111,7 +112,9 @@ class BaseLinker(object):
             return False
         return self.reachable(target, obj)
 
-    def check_cycle(self, obj, target):
+    def _check(self, obj, target):
+        if not self.to_self and obj is target:
+            raise ValueError(f"pointing '{self.name}' in {obj.__class__.__name__} back to self: 'to_self' is set to False")
         if target is not None and not (self.cyclic and self._other(target).cyclic):
             if self.creates_cycle(obj, target):
                 raise ValueError(f"setting '{self.name}' in {obj.__class__.__name__} creates cycle: 'cyclic' is set to False")
@@ -127,13 +130,15 @@ class BaseLinker(object):
         except KeyError:
             return self._init(obj)
 
-    def iterate(self, start_obj, cycle=False, breadth_first=False):
+    def iterate(self, start_obj, cyclic=False, breadth_first=False):
         iterator = Iterator(self.name)
-        yield from iterator.iterate(start_obj, cycle=cycle, breadth_first=breadth_first)
+        yield from iterator.iterate(start_obj, cyclic=cyclic, breadth_first=breadth_first)
 
-    def visit(self, start_obj, on_visit, cycle=False, breadth_first=False):
+    __call__ = iterate  # shortcut to iteration
+
+    def visit(self, start_obj, on_visit, cyclic=False, breadth_first=False):
         visitor = Visitor(self.name)
-        return visitor(start_obj, on_visit, cycle=cycle, breadth_first=breadth_first)
+        return visitor(start_obj, on_visit, cyclic=cyclic, breadth_first=breadth_first)
 
     def build(self, start_obj, key='__iter__'):
         build_on_visit = self._build_on_visit(key)
@@ -190,14 +195,14 @@ class BaseLinker(object):
     def _del(self, obj, target):
         raise NotImplementedError
 
-    def _build_on_visit(self, key, wrapper_class):
+    def _build_on_visit(self, key):
         raise NotImplementedError
 
 
 class One(BaseLinker):
 
     def __set__(self, obj, target):
-        self.check_cycle(obj, target)
+        self._check(obj, target)
         self._unlink(obj)
         if target is not None:
             self._other(target)._unlink(target)
@@ -235,7 +240,6 @@ class One(BaseLinker):
         if target is None:
             target = self.__get__(obj)
         super()._unlink(obj, target)
-
 
 
 class BaseMany(BaseLinker):

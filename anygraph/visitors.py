@@ -28,8 +28,8 @@ class BaseIterator(object):
                 except TypeError:
                     yield attr
 
-    def iterate(self, obj, cycle=False, breadth_first=False):
-        registry = None if cycle else set()
+    def iterate(self, obj, cyclic=False, breadth_first=False):
+        registry = None if cyclic else set()
         if breadth_first:
             yield from self._breadth_first(obj, reg=registry)
         else:
@@ -161,9 +161,9 @@ class Iterator(BaseIterator):
 
 class Visitor(BaseIterator):
 
-    def __call__(self, obj, on_visit, cycle=False, breadth_first=False):
+    def __call__(self, obj, on_visit, cyclic=False, breadth_first=False):
         try:
-            for obj in self.iterate(obj, cycle, breadth_first):
+            for obj in self.iterate(obj, cyclic, breadth_first):
                 on_visit(obj)
         except StopIteration:
             pass
@@ -177,7 +177,7 @@ class BaseVisitor(BaseIterator):
     def get_store(self):
         return None
 
-    def __call__(self, obj, cycle=False, breadth_first=False):
+    def __call__(self, obj, cyclic=False, breadth_first=False):
         visit = self.visit
         store = self.get_store()
         try:
@@ -211,7 +211,7 @@ class Gather(BaseVisitor):
 
 class BaseFinder(object):
     def __init__(self, prop_name, filter):
-        super().__init__(prop_name, cycle=False)
+        super().__init__(prop_name, cyclic=False)
         self.filter = filter
 
 

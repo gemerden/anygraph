@@ -30,14 +30,14 @@ if __name__ == '__main__':
         visited.append(obj)
 
 
-    # with 'cycle=True' nodes can be visited multiple times if graph is cyclic
-    Node.nexts.visit(node_1, on_visit=on_visit, cycle=True)
+    # with 'cyclic=True' nodes can be visited multiple times if graph is cyclic
+    Node.nexts.visit(node_1, on_visit=on_visit, cyclic=True)
 
     assert visited == [node_1, node_2, node_3, node_1, node_2, node_3]
 
     # graph can also be iterated over in 'breadth_first' order
     del visited[:]
-    Node.nexts.visit(node_1, on_visit=on_visit, cycle=True, breadth_first=True)
+    Node.nexts.visit(node_1, on_visit=on_visit, cyclic=True, breadth_first=True)
 
     assert visited == [node_1, node_2, node_3, node_3, node_1, node_1]
 

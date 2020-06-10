@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
     """ same again but now cyclic and with a break ;-) """
     print('\ncyclic iteration:')
-    for i, peep in enumerate(Person.friends.iterate(bob, cycle=True, breadth_first=True)):
+    for i, peep in enumerate(Person.friends.iterate(bob, cyclic=True, breadth_first=True)):
         if i >= 10:
             break
         print(i, peep)
