@@ -1,8 +1,12 @@
+import random
 from collections import deque
 from heapq import heappop, heappush
 from operator import attrgetter
 
-from anygraph.tools import Heap
+
+class Found(Exception):
+    def __init__(self, what):
+        self.what = what
 
 
 class BaseIterator(object):
@@ -70,6 +74,12 @@ class BaseIterator(object):
             return self._astar(start_obj, target_obj, get_cost, heuristic)
         else:
             return self._dijkstra(start_obj, target_obj, get_cost)
+
+    def random_walk(self, start_obj):
+        obj = start_obj
+        while True:
+            yield obj
+            obj = random.choice(list(self.iter_object(obj)))
 
     def _dijkstra(self, start_obj, target_obj, get_cost):
         """
@@ -157,6 +167,8 @@ class Visitor(BaseIterator):
                 on_visit(obj)
         except StopIteration:
             pass
+        except Found as found:
+            return found.what
         return on_visit
 
 
