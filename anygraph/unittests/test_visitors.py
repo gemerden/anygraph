@@ -117,7 +117,6 @@ class testPathMethods(unittest.TestCase):
         if path:  # occasionally there is no path due to random matrix
             for o1, o2 in chained(path):
                 assert o2 in o1.nexts
-            print('path =', [p.num for p in path])
 
     def test_astar(self):
 
@@ -162,4 +161,3 @@ class testPathMethods(unittest.TestCase):
         if path:  # occasionally there is no path due to random matrix
             for o1, o2 in chained(path):
                 assert o2 in o1.nexts
-            print('path =', [p.index for p in path])
