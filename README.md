@@ -1,6 +1,6 @@
 # Anygraph
 
-_The easiest way to construct and use graphs_
+_The easiest way to construct and use graphs in Python_
 
 ## Introduction
 _Anygraph_ is a very easy to use library to add double sided relationships between objects. This can be used to construct trees, directed and non-directed graphs, cyclic and non-cyclic graphs, and chains of objects.
