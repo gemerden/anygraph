@@ -53,7 +53,7 @@ class Link(object): # or a chain of objects
     next_link = One('prev_link')
     prev_link = One('next_link')
 ```
-This also means that you can easily add a graph structure to existing objects, just by adding a definition as seen above. Note that any names can be used, names like 'parent' are used here for clarity.
+This also means that you can easily add a graph structure to existing objects, just by adding a class attribute as seen here. Note that any names can be used, names like 'parent' are used for clarity.
 
 The next step is to actually construct a graph; linking the nodes together. Let's take the tree graph as an example, since it uses both `One` and `Many`:
 ```python
