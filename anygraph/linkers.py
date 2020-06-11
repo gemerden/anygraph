@@ -113,9 +113,13 @@ class BaseLinker(object):
         return self.reachable(target, obj)
 
     def _check(self, obj, target):
-        if not self.to_self and obj is target:
-            raise ValueError(f"pointing '{self.name}' in {obj.__class__.__name__} back to self: 'to_self' is set to False")
-        if target is not None and not (self.cyclic and self._other(target).cyclic):
+        if target is None:
+            return
+        other = self._other(target)
+        if not (self.to_self and other.to_self):  # reverse might be a different relationship
+            if obj is target:
+                raise ValueError(f"pointing '{self.name}' in {obj.__class__.__name__} back to self: 'to_self' is set to False")
+        if not (self.cyclic and other.cyclic):
             if self.creates_cycle(obj, target):
                 raise ValueError(f"setting '{self.name}' in {obj.__class__.__name__} creates cycle: 'cyclic' is set to False")
 
