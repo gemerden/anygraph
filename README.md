@@ -7,8 +7,8 @@ _Anygraph_ is a very easy to use library to add double sided relationships betwe
 
 _Anygraph_ also includes methods like:
 * Depth and breadth-first iteration,
-* Dijkstra and A* shortest path algorithms,
 * Building a graph from any relationship between objects, of the same or different classes,
+* Dijkstra and A* shortest path algorithms,
 * Applying a function to each connected node in the graph, possibly altering the graph, 
 * Traversing the graph with a key-function to select the next node,
 * Check for cycles or if a node is reachable from another node,
@@ -110,7 +110,7 @@ ann = Person()
 ann.friends.add(bob)
 # ... create a network of friends
 
-# iterate tthrough the graph in depth first order
+# iterate through the graph in depth first order
 for friend in Person.friends.iterate(bob):  # note we call friends on Person, not bob
     print(friend)
 
