@@ -75,11 +75,11 @@ class BaseIterator(object):
         else:
             return self._dijkstra(start_obj, target_obj, get_cost)
 
-    def random_walk(self, start_obj):
+    def walk(self, start_obj, key):
         obj = start_obj
         while True:
             yield obj
-            obj = random.choice(list(self.iter_object(obj)))
+            obj = min(self.iter_object(obj), key=key)
 
     def _dijkstra(self, start_obj, target_obj, get_cost):
         """
@@ -90,7 +90,6 @@ class BaseIterator(object):
         cost = {id(start_obj): 0}
         queue = deque([start_obj])
         done = {}  # a dict because it is also used to translate back from ids to objects in _create_path
-
         while len(queue):
             obj = queue.popleft()
             obj_id = id(obj)
@@ -122,7 +121,6 @@ class BaseIterator(object):
         cost = {id(start_obj): 0}
         heap = [(None, id(start_obj), start_obj)]
         done = {}  # a dict because it is also used to translate back from ids to objects in _create_path
-
         while heap:
             _, obj_id, obj = heappop(heap)
             done[obj_id] = obj
