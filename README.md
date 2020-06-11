@@ -80,17 +80,17 @@ Note that the insertion order of the children is maintained; the underlying data
 ### Cycles in Graphs
 If you do not want to have cycles in the graph, you can set (for example):
 ```python
-class Node(object): # a directed graph
+class Node(object):
     nexts = Many('prevs', cyclic=False)
     prevs = Many('nexts')
 ```
 When you create a link that would create a cycle in the graph, this will raise a `ValueError`. This will also prevent a cycle to be created through the reverse `prevs` relationship. Note that a non-directed graph is always cyclic (I am a friend of my friend).
 
-To check whether a node is in a cycle, call `Node.nexts.in_cycle(some_node)` 
+To check whether a node is in a cycle, call `Node.nexts.in_cycle(some_node)`. This can only be the case if `cyclic=True`: the default.
 ### Self-reference
 If you want to prevent objects from having a relationship to themselves, use:
 ```python
-class Node(object): # a directed graph
+class Node(object):
     nexts = Many('prevs', to_self=False)
     prevs = Many('nexts')
 
