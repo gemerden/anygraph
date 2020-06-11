@@ -123,7 +123,7 @@ This will iterate through the graph, by default not in cycles and depth-first. T
 for friend in Person.friends(bob, cyclic=True, breadth_first=True):
     print(friend)
 ```
-If nodes are not reachable from the starting node through the graph, they will not show up during iteration. If you wan to check reachability, do `Node.nexts.reachable(node, target_node)`.
+If nodes are not reachable from the starting node through the graph, they will not show up during iteration. If you wan to check reachability, do `Person.friends.reachable(from_person, to_person)`, in the example above.
 ### Building a Graph
 Graphs can often be automatically constructed by using the 'build' method. This only needs a function or method_name (or attribute name for `One` relationships). An rudimentary example:
 ```python
