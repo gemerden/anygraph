@@ -81,7 +81,9 @@ In short: changes to a `One` or `Many` relationship will always **update the rev
 * A `Many` relationship supports the same methods and operations as abc.MutableSet (`.add`, `.remove`, `.discard`, `.update` + `&`, `|` `-`, etc.)  
 
 Note that the insertion order of the children is maintained; the underlying data-structure is a `dict`, not a `set`. Any object can be used as node in the graph, not only objects that are hashable. 
+
 ### Cycles in Graphs
+
 If you do not want to have cycles in the graph, you can set (for example):
 ```python
 class Node(object):
@@ -91,7 +93,9 @@ class Node(object):
 When you create a link that would create a cycle in the graph, this will raise a `ValueError`. This will also prevent a cycle to be created through the reverse `prevs` relationship. Note that a non-directed graph is always cyclic (I am a friend of my friend).
 
 To check whether a node is in a cycle, call `Node.nexts.in_cycle(some_node)`. This can only be the case if `cyclic=True`: the default.
+
 ### Self-reference
+
 If you want to prevent objects from having a relationship to themselves, use:
 ```python
 class Node(object):
@@ -104,6 +108,7 @@ class Node(object):
 This will also cause a `ValueError` to be raised when tried. Note that `cyclic=False` will also prevent self-reference.
 
 ### Graph Iteration
+
 There are several ways to iterate through a graph. Most common are depth first and breadth first. Both are supported out of the box. For example:
 ```python
 class Person(object):
@@ -128,7 +133,9 @@ for friend in Person.friends(bob, cyclic=True, breadth_first=True):
     print(friend)
 ```
 If nodes are not reachable from the starting node through the graph, they will not show up during iteration. If you wan to check reachability, do `Person.friends.reachable(from_person, to_person)`, in the example above.
+
 ### Building a Graph
+
 Graphs can often be automatically constructed by using the 'build' method. This only needs a function or method_name (or attribute name for `One` relationships). An rudimentary example:
 ```python
 from anygraph import One, Many
@@ -172,7 +179,9 @@ assert items[0].siblings() == items[1:]
 This makes all objects iteratively encountered by `build()` be part of the graph, to be iterated (depth- or breadth-first), traversed upward and downward; it makes the `Item.siblings()` method work. As long as a iterable relationship between objects exists or can be created, a double-linked graph can be built automatically.
 
 Note that the graph can traverse multiple unrelated object types/classes, as long as they have One or Many relationships defined with the same name.
+
 ### Visiting the Graph
+
 Another useful utility is the `.visit()` method. It is used to traverse the graph and apply a function/callable on any node encountered (using the example above):
 ```python
 objs = []
@@ -186,6 +195,7 @@ assert objs == [items_obj] + items
 Again the iteration order and allowing cycles in the iteration can be modified with `breadth_first` and `cyclic` (see Iteration).
 
 ### Shortest Path
+
 Often a shortest path between to nodes in a graph must be found (e.g. in route-planners or in games). _Anygraph_ provides two algorithms to calculate shortest path.Let's say we have a graph consisting of nodes that have already been connected and we want the shortest route between the first and last node (or between any other nodes):
 ```python
 class Node(object):
@@ -213,7 +223,9 @@ path = Node.nexts.shortest_path(nodes[0], nodes[-1], get_cost=cost, heuristic=he
 With the heuristic, the A* algorithm is used; without, the method falls back to Dijkstra. A lower estimate means that the estimate is always smaller or equal than the real cost. In geographic pathfinding the heuristic is often the distance or traveltime to the endpoint without obstructions. 
 
 A more in-depth example can be found in `anygraph\recipes\shortest_path_in_grid.py`
-###Walking the Graph
+
+### Walking the Graph
+
 Another option is to iterate through the graph by picking the next node with a key function:
 ```python
 class Person(object):
@@ -226,7 +238,9 @@ for person in Person.friends.walk(people[0], key=lambda p: random.random()):
     print(person)
 ```
 `walk()` will run forever unless a dead-end is encountered (in the non-directed graph above this will never happen, because the the walk can always return to the last node) or you `break` out of the loop. Picking the next node essentially happens through `next_node = min(next_nodes, key=key)`. 
+
 ### Mixed Nodes
+
 The nodes in the graph do not have to be of the same class, as long as the relationships have the same name. Let's give edges in the graph their own class:
 ```python
 from anygraph import One, Many
@@ -266,11 +280,14 @@ Edge
 etc. 
 """
 ```
-##Authors
+
+## Authors
+
 contributing authers are:
 
 * Lars van Gemerden - initial work - _rational-it_
 
-##license
+## license
+
 This project is licensed under the MIT License - see the `LICENSE.txt` file for details
 
