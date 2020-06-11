@@ -151,8 +151,8 @@ class BaseLinker(object):
                 return True
         return False
 
-    def random_walk(self, start_obj):
-        yield from Iterator(self.name).random_walk(start_obj)
+    def walk(self, start_obj, key):
+        yield from Iterator(self.name).walk(start_obj, key=key)
 
     def in_cycle(self, start_obj):
         return self.reachable(start_obj, start_obj)

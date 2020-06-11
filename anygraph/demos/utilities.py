@@ -1,3 +1,5 @@
+import random
+
 from anygraph import Many
 from anygraph.tools import flipcoin
 
@@ -67,7 +69,7 @@ if __name__ == '__main__':
 
     """ randomly walk through the graph (indefinitely if not stopped) """
     print('\nrandom walk:')
-    for i, peep in enumerate(Person.friends.random_walk(ann)):
+    for i, peep in enumerate(Person.friends.walk(ann, key=lambda p: random.random())):
         if i >= 10:
             break
         print(i, peep)
