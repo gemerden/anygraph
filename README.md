@@ -3,28 +3,36 @@
 _The easiest way to construct and use graphs_
 
 ## Introduction
-Anygraph is a very easy to use library to add double sided relationships between objects. This can be used to construct trees, directed and non-directed graphs and chains of objects.
+Anygraph is a very easy to use library to add double sided relationships between objects. This can be used to construct trees, directed and non-directed graphs, cyclic and non-cyclic graphs, and chains of objects.
 
-Anygraph also includes some methods like depth and breadth-first iteration as well as Dijkstra and Astar shortest path algorithms.
+Anygraph also includes methods like:
+* Depth and breadth-first iteration,
+* Dijkstra and A* shortest path algorithms,
+* Building a graph from any relationship between objects, of the same or different classes,
+* Applying a function to each connected node in the graph, possibly altering the graph, 
+* Traversing the graph with a key-function to select the next node,
+* Check for cycles or if a node is reachable from another node,
+
+No inheritance is needed, a graph structure can simply be added to a class by setting one or two class attributes on your (possibly existing) class.
 
 ##Installation
 Anygraph can be installed using pip:
 
-`pip install anygraph`
+`> pip install anygraph`
 
 ##Samples
-Many examples can be found in the 'demos' and 'recipes' directories. Below are some of the basics:
+More examples can be found in the 'demos' and 'recipes' directories. Below are some of the basics:
 
 ### The Basics
 
-These definitions are sufficient to create different graphs:
+These definitions are sufficient to be able to create different types of graphs:
 ```python
 from anygraph import One, Many
 
 class Person(object): # a non-directed graph
     friends = Many('friends') 
 
-class Node(object): # a directed graph
+class Node(object): # a directed graph with reverse relationship
     nexts = Many('prevs')
     prevs = Many('nexts')
 
@@ -72,7 +80,8 @@ class Node(object): # a directed graph
     prevs = Many('nexts')
 ```
 When you create a link that would create a cycle in the graph, this will raise a `ValueError`. This will also prevent a cycle to be created through the reverse `prevs` relationship. Note that a non-directed graph is always cyclic (I am a friend of my friend).
- 
+
+To check whether a node is in a cycle, call `Node.nexts.in_cycle(some_node)` 
 ### Self-reference
 If you want to prevent objects from having a relationship to themselves, use:
 ```python
@@ -105,9 +114,12 @@ This will iterate through the graph, by default not in cycles and depth-first. T
 for friend in Person.friends(bob, cyclic=True, breadth_first=True):
     print(friend)
 ```
+If nodes are not reachable from the starting node through the graph, they will not show up during iteration. If you wan to check reachability, do `Node.nexts.reachable(node, target_node)`.
 ### Building a Graph
 Graphs can often be automatically constructed by using the 'build' method. This only needs a function or method_name (or attribute name for `One` relationships). An rudimentary example:
 ```python
+from anygraph import One, Many
+
 class Items(object):
     children = Many('parent')
 
@@ -146,7 +158,7 @@ assert items[0].siblings() == items[1:]
 ```
 This makes all objects iteratively encountered by `build()` be part of the graph, to be iterated (depth- or breadth-first), traversed upward and downward; it makes the `Item.siblings()` method work. As long as a iterable relationship between objects exists or can be created, a double-linked graph can be built automatically.
 
-Note that the graph can traverse multiple unrelated object types/classes.
+Note that the graph can traverse multiple unrelated object types/classes, as long as they have One or Many relationships defined with the same name.
 ### Visiting the Graph
 Another useful utility is the `.visit()` method. It is used to traverse the graph and apply a function/callable on any node encountered (using the example above):
 ```python
@@ -163,13 +175,13 @@ Again the iteration order and allowing cycles in the iteration can be modified w
 ### Shortest Path
 Often a shortest path between to nodes in a graph must be found (e.g. in route-planners or in games). _Anygraph_ provides two algorithms to calculate shortest path.Let's say we have a graph consisting of nodes that have already been connected and we want the shortest route between the first and last node (or between any other nodes):
 ```python
-class Node(object): # a directed graph
+class Node(object):
     nexts = Many('prevs')
     prevs = Many('nexts')
 
-nodes = create_and connect_nodes()
+nodes = create_and_connect_nodes()
 
-# we need a cost function to be able to define shortest. This function results in paths with the minimum number of edges between nodes:
+# we need a cost function to be able to define shortest. The function below minimizes the number of edges in the path.
 def cost(node1, node2):
     if node1 is node2:
         return 0
@@ -184,6 +196,60 @@ def heuristic(node1, node2):
 
 #shortest path but faster
 path = Node.nexts.shortest_path(nodes[0], nodes[-1], get_cost=cost, heuristic=heuristic)
-
 ```
-With the heuristic, the A* algorithm is used, without, the method falls back to Dijkstra.
+With the heuristic, the A* algorithm is used; without, the method falls back to Dijkstra. A lower estimate means that the estimate is always smaller or equal than the real cost. In geographic pathfinding the heuristic is often the distance or traveltime to the endpoint without obstructions. 
+
+A more in-depth example can be found in `anygraph\recipes\shortest_path_in_grid.py`
+###Walking the Graph
+Another option is to iterate through the graph by picking the next node with a key function:
+```python
+class Person(object):
+    friends = Many('friends')
+
+people = create_and_connect_people()
+
+# as an example, a random walk through the graph can be created with:
+for person in Person.friends.walk(people[0], key=lambda p: random.random()):
+    print(person)
+```
+`walk()` will run forever unless a dead-end is encountered (in the non-directed graph above this will never happen, because the the walk can always return to the last node) or you `break` out of the loop. Picking the next node essentially happens through `next_node = min(next_nodes, key=key)`. 
+### Mixed Nodes
+The nodes in the graph do not have to be of the same class, as long as the relationships have the same name. Let's give edges in the graph their own class:
+```python
+from anygraph import One, Many
+
+class Node(object):
+    nexts = Many('prevs')
+    prevs = Many('nexts')
+
+class Edge(object):  # an edge only connects to one node on each end
+    nexts = One('prevs')
+    prevs = One('nexts')
+
+    def __init__(self, prev, next):
+        self.prevs = prev
+        self.nexts = next
+
+def create_and_connect_nodes(num):
+    """ for example connect all nodes with all nodes """
+    nodes = [Node() for _ in range(num)]
+    for node1 in nodes:
+        for node2 in nodes:
+            Edge(node1, node2)
+    return nodes
+
+nodes = create_and_connect_nodes(5)
+
+# now lets run through the graph.
+for node_or_edge in Node.nexts(nodes[0]):  # or Node.prevs(nodes[0]) to follow the reverse graph
+    print(node_or_edge.__class__.__name__)
+
+"""
+This will print:
+Node
+Edge
+Node
+Edge
+etc. 
+"""
+```
