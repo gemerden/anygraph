@@ -30,7 +30,7 @@ Unittests can be found in `anygraph/unittests`
 
 ## Samples
 
-More examples can be found in the 'demos' and 'recipes' directories. Below are some of the basics:
+More examples can be found in the `demos` and `recipes` directories. Below are some of the basics:
 
 ### The Basics
 
@@ -149,7 +149,7 @@ class Item(object):
     parent = One('children')
 
     def siblings(self):
-        return [s for s in self.parent if s is not self] 
+        return [s for s in self.parent.children if s is not self] 
 
 # add items to an Items object
 items = [Item() for _ in range(5)] 
