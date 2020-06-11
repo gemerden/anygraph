@@ -3,6 +3,7 @@
 _The easiest way to construct and use graphs in Python_
 
 ## Introduction
+
 _Anygraph_ is a very easy to use library to add double sided relationships between objects. This can be used to construct trees, directed and non-directed graphs, cyclic and non-cyclic graphs, and chains of objects.
 
 _Anygraph_ also includes methods like:
@@ -15,17 +16,20 @@ _Anygraph_ also includes methods like:
 
 No inheritance is needed, a graph structure can simply be added to a class by setting one or two class attributes on your (possibly existing) class.
 
-##Installation
+## Installation
+
 Anygraph can be installed using pip:
 
 `> pip install anygraph`
 
 Anygraph has _no dependencies_.
 
-##Testing
+## Testing
+
 Unittests can be found in `anygraph/unittests`
 
-##Samples
+## Samples
+
 More examples can be found in the 'demos' and 'recipes' directories. Below are some of the basics:
 
 ### The Basics
