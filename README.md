@@ -3,9 +3,9 @@
 _The easiest way to construct and use graphs_
 
 ## Introduction
-Anygraph is a very easy to use library to add double sided relationships between objects. This can be used to construct trees, directed and non-directed graphs, cyclic and non-cyclic graphs, and chains of objects.
+_Anygraph_ is a very easy to use library to add double sided relationships between objects. This can be used to construct trees, directed and non-directed graphs, cyclic and non-cyclic graphs, and chains of objects.
 
-Anygraph also includes methods like:
+_Anygraph_ also includes methods like:
 * Depth and breadth-first iteration,
 * Dijkstra and A* shortest path algorithms,
 * Building a graph from any relationship between objects, of the same or different classes,
@@ -19,6 +19,11 @@ No inheritance is needed, a graph structure can simply be added to a class by se
 Anygraph can be installed using pip:
 
 `> pip install anygraph`
+
+Anygraph has _no dependencies_.
+
+##Testing
+Unittests can be found in `anygraph/unittests`
 
 ##Samples
 More examples can be found in the 'demos' and 'recipes' directories. Below are some of the basics:
@@ -51,14 +56,14 @@ The next step is to actually construct a graph; linking the nodes together. Let'
 nodes = [TreeNode() for _ in range(4)]
 
 # lets give nodes[0] some children
-nodes[0].children = [nodes[1], nodes[2]]
+nodes[0].children = [nodes[1], nodes[2]]  # or nodes[0].update([nodes[1], nodes[2]])
 
 # check whether nodes[1] and nodes[2] have the right parent
 assert nodes[1].parent is nodes[0]
 assert nodes[2].parent is nodes[0]
 
 # let nodes[3] be a child of nodes[0] too
-nodes[3].parent = nodes[0]  # does exactly the same as 'nodes[0].children.add(nodes[3])' 
+nodes[3].parent = nodes[0]  # or 'nodes[0].children.add(nodes[3])' 
 assert nodes[3] in nodes[0].children
 
 # let nodes[3] be a child of nodes[1]
@@ -71,7 +76,7 @@ In short: changes to a `One` or `Many` relationship will always **update the rev
 * A `One` relationship supports the normal attribute operations: `n.parent = child`, `del n.parent`, `n.parent = None` (same as `del`)
 * A `Many` relationship supports the same methods and operations as abc.MutableSet (`.add`, `.remove`, `.discard`, `.update` + `&`, `|` `-`, etc.)  
 
-Note that the insertion order of the children is maintained; the underlying data-structure is a `dict`, not a `set`. 
+Note that the insertion order of the children is maintained; the underlying data-structure is a `dict`, not a `set`. Any object can be used as node in the graph, not only objects that are hashable. 
 ### Cycles in Graphs
 If you do not want to have cycles in the graph, you can set (for example):
 ```python
@@ -88,6 +93,9 @@ If you want to prevent objects from having a relationship to themselves, use:
 class Node(object): # a directed graph
     nexts = Many('prevs', to_self=False)
     prevs = Many('nexts')
+
+    node = Node()
+    node.nexts.add(node)  # raises ValueError
 ```
 This will also cause a `ValueError` to be raised when tried. Note that `cyclic=False` will also prevent self-reference.
 
@@ -102,6 +110,7 @@ ann = Person()
 ann.friends.add(bob)
 # ... create a network of friends
 
+# iterate tthrough the graph in depth first order
 for friend in Person.friends.iterate(bob):  # note we call friends on Person, not bob
     print(friend)
 
@@ -231,7 +240,7 @@ class Edge(object):  # an edge only connects to one node on each end
         self.nexts = next
 
 def create_and_connect_nodes(num):
-    """ for example connect all nodes with all nodes """
+    """ for example: connect all nodes with all nodes """
     nodes = [Node() for _ in range(num)]
     for node1 in nodes:
         for node2 in nodes:
@@ -253,3 +262,11 @@ Edge
 etc. 
 """
 ```
+##Authors
+contributing authers are:
+
+* Lars van Gemerden - initial work - _rational-it_
+
+##license
+This project is licensed under the MIT License - see the `LICENSE.txt` file for details
+
