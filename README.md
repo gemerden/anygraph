@@ -283,7 +283,7 @@ etc.
 
 ## Authors
 
-contributing authers are:
+Contributing authors are:
 
 * Lars van Gemerden - initial work - _rational-it_
 
