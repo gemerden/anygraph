@@ -86,7 +86,7 @@ nodes[1].children.add(nodes[3])
 assert nodes[3].parent is nodes[1]
 assert nodes[3] not in nodes[0].children
 ```
-In short: changes to a `One` or `Many` relationship will always **update the reverse relationships** and break existing relationships when needed.
+In short: changes to a `One` or `Many` double linked relationship will always **update the reverse relationships** and break existing relationships when needed.
 
 * A `One` relationship supports the normal attribute operations: `n.parent = child`, `del n.parent`, `n.parent = None` (same as `del`)
 * A `Many` relationship supports the same methods and operations as abc.MutableSet (`.add`, `.remove`, `.discard`, `.update` + `&`, `|` `-`, etc.)  
@@ -104,7 +104,7 @@ node1, node2 = Node(), Node()
 node1.nexts.add(node2)
 node2.nexts.add(node1)  # raises ValueError
 ```
-When you create a link that would create a cycle in the graph, this will raise a `ValueError`. This will also prevent a cycle to be created through the reverse `prevs` relationship. Note that a non-directed graph is always cyclic (I am a friend of my friend).
+When you create a link that would create a cycle in the graph, this will raise a `ValueError`. This will also prevent a cycle to be created through the reverse relationship. Note that a double-linked non-directed graph is always cyclic (I am a friend of my friend).
 
 To check whether a node is in a cycle, call `Node.nexts.in_cycle(some_node)`. To check whether there are any cycles in the graph reachable from a node, call `Node.nexts.is_cyclic(some_node)`. These can only be the case if `cyclic=True`: the default.
 
