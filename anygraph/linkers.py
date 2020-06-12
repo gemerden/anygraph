@@ -124,8 +124,8 @@ class BaseLinker(object):
         self.visit(start_obj, on_visit=build_on_visit, breadth_first=True)
         return self
 
-    def find(self, start_obj, filter, breadth_first=False):
-        return [obj for obj in self.iterate(start_obj, breadth_first=breadth_first) if filter(obj)]
+    def find(self, start_obj, filter):
+        return [obj for obj in self.iterate(start_obj, breadth_first=True) if filter(obj)]
 
     def reachable(self, start_obj, target_obj):
         iterator = Iterator(self.name)
