@@ -35,7 +35,10 @@ class BaseIterator(object):
         else:
             yield from self._depth_first(obj, reg=registry)
 
+    __call__ = iterate
+
     def _depth_first(self, obj, reg):
+        """ does not use recursion to prevent running out of the callstack """
         if reg is not None:
             reg.add(id(obj))
         stack = [obj]
@@ -75,9 +78,11 @@ class BaseIterator(object):
         else:
             return self._dijkstra(start_obj, target_obj, get_cost)
 
-    def walk(self, start_obj, key):
+    def walk(self, start_obj, key, on_visit=None):
         obj = start_obj
         while True:
+            if on_visit:
+                on_visit(obj)
             yield obj
             obj = min(self.iter_object(obj), key=key)
 

@@ -2,13 +2,11 @@ import unittest
 
 from anygraph import One, Many
 
-
 class TestLinkers(unittest.TestCase):
 
-    def test_one_one(self):
+    def test_one(self):
         class TestOne(object):
-            left = One('right')
-            right = One('left')
+            next = One()
 
             def __init__(self, name):
                 self.name = name
@@ -16,11 +14,269 @@ class TestLinkers(unittest.TestCase):
         bob = TestOne('bob')
         ann = TestOne('ann')
 
+        bob.next = ann
+        assert bob.next is ann
+
+        assert list(TestOne.next.iterate(bob)) == [bob, ann]
+
+        del bob.next
+        assert bob.next is None
+
+        bob.next = ann
+        ann.next = bob
+        assert bob.next is ann
+        assert ann.next is bob
+
+        bob.next = bob
+        assert bob.next is bob
+
+    def test_triangle(self):
+        class TestOne(object):
+            next = One()
+
+            def __init__(self, name):
+                self.name = name
+
+        bob = TestOne('bob')
+        ann = TestOne('ann')
+        kik = TestOne('kik')
+
+        bob.next = ann
+        ann.next = kik
+        kik.next = bob
+
+        assert bob.next is ann
+        assert ann.next is kik
+        assert kik.next is bob
+
+        assert list(TestOne.next.iterate(bob)) == [bob, ann, kik]
+
+        del ann.next
+
+        assert ann.next is None
+        assert bob.next is ann
+        assert kik.next is bob
+
+    def test_many(self):
+        class TestMany(object):
+            nexts = Many()
+
+            def __init__(self, name):
+                self.name = name
+
+        bob = TestMany('bob')
+        ann = TestMany('ann')
+        pete = TestMany('pete')
+        howy = TestMany('howy')
+
+        bob.nexts.update([ann, pete])
+        pete.nexts.add(howy)
+
+        assert ann in bob.nexts
+        assert howy in pete.nexts
+        assert howy not in bob.nexts
+
+        assert list(TestMany.nexts.iterate(bob)) == [bob, ann, pete, howy]
+
+    def test_cyclic(self):
+        class TestMany(object):
+            nexts = Many(cyclic=False)
+
+            def __init__(self, name):
+                self.name = name
+
+        bob = TestMany('bob')
+        ann = TestMany('ann')
+        pete = TestMany('pete')
+        howy = TestMany('howy')
+
+        bob.nexts.update([ann, pete])
+        pete.nexts.add(howy)
+
+        with self.assertRaises(ValueError):
+            howy.nexts.add(bob)
+
+    def test_to_self(self):
+        class TestMany(object):
+            nexts = Many(to_self=False)
+
+            def __init__(self, name):
+                self.name = name
+
+        bob = TestMany('bob')
+
+        with self.assertRaises(ValueError):
+            bob.nexts.add(bob)
+
+        with self.assertRaises(ValueError):
+            bob.nexts = [bob]
+
+
+    def test_on_link(self):
+        on_link_results = []
+        on_unlink_results = []
+
+        def on_link(one, two):
+            on_link_results.append((one, two))
+
+        def on_unlink(one, two):
+            on_unlink_results.append((one, two))
+
+        class TestMany(object):
+            nexts = Many(on_link=on_link, on_unlink=on_unlink)
+
+            def __init__(self, name):
+                self.name = name
+
+        bob = TestMany('bob')
+        ann = TestMany('ann')
+        pete = TestMany('pete')
+        howy = TestMany('howy')
+
+        bob.nexts.update([ann, pete])
+        pete.nexts.add(howy)
+
+        assert on_link_results == [(bob, ann), (bob, pete), (pete, howy)]
+
+        del bob.nexts
+        assert on_unlink_results == [(bob, ann), (bob, pete)]
+
+    def test_visitor(self):
+        class TestMany(object):
+            nexts = Many()
+
+            def __init__(self, name):
+                self.name = name
+
+        bob = TestMany('bob')
+        ann = TestMany('ann')
+        pete = TestMany('pete')
+        howy = TestMany('howy')
+
+        bob.nexts.update([ann, pete])
+        ann.nexts.add(howy)
+        pete.nexts.add(howy)
+
+        people = []
+
+        def on_visit(obj):
+            people.append(obj)
+
+        TestMany.nexts.visit(bob, on_visit=on_visit, breadth_first=False)
+        assert people == [bob, ann, howy, pete]
+
+        del people[:]
+        TestMany.nexts.visit(bob, on_visit=on_visit, breadth_first=True)
+        assert people == [bob, ann, pete, howy]
+
+    def test_builder_many_by_name(self):
+
+        class TestBuilder(object):
+            nexts = Many()
+
+            def __init__(self, name, iterable=()):
+                self.name = name
+                self.items = list(iterable)
+
+            def extend(self, *items):
+                self.items.extend(items)
+
+            def __iter__(self):
+                for item in self.items:
+                    yield item
+
+        bob = TestBuilder('bob')
+        ann = TestBuilder('ann')
+        pete = TestBuilder('pete')
+        howy = TestBuilder('howy')
+
+        bob.extend(ann, pete)
+        pete.extend(howy, bob)
+        ann.extend(pete)
+        howy.extend(ann)
+
+        assert bob.nexts == set()
+
+        TestBuilder.nexts.build(bob)
+
+        assert bob.nexts == {ann, pete}
+        assert howy.nexts == {ann}
+
+    def test_builder_many_by_func_cyclic(self):
+
+        class TestBuilder(object):
+            nexts = Many()
+
+            def __init__(self, name, iterable=()):
+                self.name = name
+                self.items = list(iterable)
+
+            def extend(self, *items):
+                self.items.extend(items)
+
+        bob = TestBuilder('bob')
+        ann = TestBuilder('ann')
+        pete = TestBuilder('pete')
+        howy = TestBuilder('howy')
+
+        bob.extend(ann, pete)
+        pete.extend(howy, bob)
+        ann.extend(pete)
+        howy.extend(ann)
+
+        TestBuilder.nexts.build(bob, key=lambda obj: obj.items)
+
+        assert bob.nexts == {ann, pete}
+        assert pete.nexts == {howy, bob}
+        assert howy.nexts == {ann}
+        assert TestBuilder.nexts.in_cycle(bob)
+        assert TestBuilder.nexts.is_cyclic(bob)
+
+    def test_builder_one(self):
+
+        class TestBuilder(object):
+            next = One()
+
+            def __init__(self, name, other=None):
+                self.name = name
+                self.other = other
+
+            def __str__(self):
+                return self.name
+
+        bob = TestBuilder('bob')
+        ann = TestBuilder('ann')
+        pip = TestBuilder('pip')
+
+        bob.other = ann
+        ann.other = pip
+
+        assert bob.next is None
+
+        TestBuilder.next.build(bob, 'other')
+
+        assert bob.next == ann
+        assert ann.next == pip
+
+
+class TestDoubleLinkers(unittest.TestCase):
+
+    def test_one_one(self):
+        class TestOneOne(object):
+            left = One('right')
+            right = One('left')
+
+            def __init__(self, name):
+                self.name = name
+
+        bob = TestOneOne('bob')
+        ann = TestOneOne('ann')
+
         bob.left = ann
         assert bob.left is ann
         assert ann.right is bob
 
-        assert list(TestOne.left.iterate(bob)) == [bob, ann]
+        assert list(TestOneOne.left.iterate(bob)) == [bob, ann]
 
         del bob.left
         assert bob.left is None

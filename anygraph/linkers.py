@@ -6,13 +6,13 @@ from anygraph.visitors import Iterator, Visitor, Found
 
 
 class DelegateSet(MutableSet):
-    get_id = id
 
-    def __init__(self, owner, linker):
+    def __init__(self, owner, linker, get_id):
         super().__init__()
         self.targets = {}
         self.owner = owner
         self.linker = linker
+        self.get_id = get_id
 
     def __len__(self):
         return len(self.targets)
@@ -74,8 +74,6 @@ class DelegateMap(DelegateSet):
 
 
 class DelegateNamedMap(DelegateMap):
-    get_id = attrgetter('name')
-
     def add(self, target):
         self.set_name(target)
         super().add(target)
@@ -89,39 +87,16 @@ class DelegateNamedMap(DelegateMap):
 
 
 class BaseLinker(object):
+    get_id = id  # default
 
-    def __init__(self, target_name, cyclic=True, to_self=True, on_link=None, on_unlink=None):
+    def __init__(self, target_name=None, cyclic=True, to_self=True, on_link=None, on_unlink=None, get_id=None):
         self.target_name = target_name
         self.cyclic = cyclic
         self.to_self = to_self
         self._do_on_link = on_link
         self._do_on_unlink = on_unlink
+        self._get_id = get_id or self.get_id
         self.name = None
-
-    def existing(self, obj, target):
-        raise NotImplementedError
-
-    def creates_cycle(self, obj, target):
-        if obj is target:
-            return True
-        if self.name == self.target_name:
-            return True
-        if target is None:
-            return False
-        if self.existing(obj, target):
-            return False
-        return self.reachable(target, obj)
-
-    def _check(self, obj, target):
-        if target is None:
-            return
-        other = self._other(target)
-        if not (self.to_self and other.to_self):  # reverse might be a different relationship
-            if obj is target:
-                raise ValueError(f"pointing '{self.name}' in {obj.__class__.__name__} back to self: 'to_self' is set to False")
-        if not (self.cyclic and other.cyclic):
-            if self.creates_cycle(obj, target):
-                raise ValueError(f"setting '{self.name}' in {obj.__class__.__name__} creates cycle: 'cyclic' is set to False")
 
     def __set_name__(self, cls, name):
         self.name = name
@@ -136,7 +111,7 @@ class BaseLinker(object):
 
     def iterate(self, start_obj, cyclic=False, breadth_first=False):
         iterator = Iterator(self.name)
-        yield from iterator.iterate(start_obj, cyclic=cyclic, breadth_first=breadth_first)
+        yield from iterator(start_obj, cyclic=cyclic, breadth_first=breadth_first)
 
     __call__ = iterate  # shortcut to iteration
 
@@ -145,18 +120,37 @@ class BaseLinker(object):
         return visitor(start_obj, on_visit, cyclic=cyclic, breadth_first=breadth_first)
 
     def build(self, start_obj, key='__iter__'):
-        build_on_visit = self._build_on_visit(key)
+        build_on_visit = self._build_on_visit(key, _reg={})
         self.visit(start_obj, on_visit=build_on_visit, breadth_first=True)
+        return self
+
+    def find(self, start_obj, filter, breadth_first=False):
+        return [obj for obj in self.iterate(start_obj, breadth_first=breadth_first) if filter(obj)]
 
     def reachable(self, start_obj, target_obj):
         iterator = Iterator(self.name)
-        for obj in Iterator(self.name).iterate(start_obj):
+        for obj in iterator(start_obj):
             if target_obj in iterator.iter_object(obj):
                 return True
         return False
 
     def walk(self, start_obj, key):
         yield from Iterator(self.name).walk(start_obj, key=key)
+
+    def is_cyclic(self, start_obj):
+        seen = set()
+        cyclic = False
+
+        def visit(obj):
+            nonlocal cyclic
+            obj_id = self._get_id(obj)
+            if obj_id in seen:
+                cyclic = True
+                raise StopIteration
+            seen.add(obj_id)
+
+        self.visit(start_obj, on_visit=visit, cyclic=True)
+        return cyclic
 
     def in_cycle(self, start_obj):
         return self.reachable(start_obj, start_obj)
@@ -166,29 +160,58 @@ class BaseLinker(object):
                                                  get_cost=get_cost,
                                                  heuristic=heuristic)
 
-    def _other(self, target):
+    def _reverse(self, target):
+        if self.target_name is None:
+            return None
         return getattr(target.__class__, self.target_name)
+
+    def _existing(self, obj, target):
+        raise NotImplementedError
+
+    def _creates_cycle(self, obj, target):
+        if obj is target:
+            return True
+        if self.name == self.target_name:
+            return True
+        if target is None:
+            return False
+        if self._existing(obj, target):
+            return False
+        return self.reachable(target, obj)
+
+    def _check(self, obj, target):
+        if target is None:
+            return
+        reverse = self._reverse(target)
+        if not (self.to_self and (not reverse or reverse.to_self)):  # reverse might be a different relationship
+            if obj is target:
+                raise ValueError(f"pointing '{self.name}' in {obj.__class__.__name__} back to self: 'to_self' is set to False")
+        if not (self.cyclic and (not reverse or reverse.cyclic)):
+            if self._creates_cycle(obj, target):
+                raise ValueError(f"setting '{self.name}' in {obj.__class__.__name__} creates cycle: 'cyclic' is set to False")
 
     def _link(self, obj, target):
         self._set(obj, target)
-        self._other(target)._set(target, obj)
+        if self.target_name:
+            self._reverse(target)._set(target, obj)
 
     def _unlink(self, obj, target=None):
         if target is not None:
-            self._other(target)._del(target, obj)
+            if self.target_name:
+                self._reverse(target)._del(target, obj)
             self._del(obj, target)
 
     def _on_link(self, obj, target, _remote=False):
         if self._do_on_link:
             return self._do_on_link(obj, target)
-        if not _remote:
-            return self._other(target)._on_link(target, obj, True)
+        if self.target_name and not _remote:
+            return self._reverse(target)._on_link(target, obj, True)
 
     def _on_unlink(self, obj, target, _remote=False):
         if self._do_on_unlink:
             return self._do_on_unlink(obj, target)
-        if not _remote:
-            return self._other(target)._on_unlink(target, obj, True)
+        if self.target_name and not _remote:
+            return self._reverse(target)._on_unlink(target, obj, True)
 
     def _init(self, obj):
         raise NotImplementedError
@@ -199,7 +222,7 @@ class BaseLinker(object):
     def _del(self, obj, target):
         raise NotImplementedError
 
-    def _build_on_visit(self, key):
+    def _build_on_visit(self, key, _reg):
         raise NotImplementedError
 
 
@@ -209,7 +232,8 @@ class One(BaseLinker):
         self._check(obj, target)
         self._unlink(obj)
         if target is not None:
-            self._other(target)._unlink(target)
+            if self.target_name:
+                self._reverse(target)._unlink(target)
             self._on_link(obj, target)
             self._link(obj, target)
 
@@ -218,17 +242,23 @@ class One(BaseLinker):
         self._unlink(obj, target)
         self._on_unlink(obj, target)
 
-    def existing(self, obj, target):
+    def _existing(self, obj, target):
         return target is not None and self.__get__(obj) is target
 
-    def _build_on_visit(self, key):
+    def _build_on_visit(self, key, _reg):
+        get_id = self._get_id
+
         def visit(obj):
             if callable(key):
                 value = key(obj)
             else:
                 value = getattr(obj, key)
+            ident = get_id(value)
+            if ident in _reg:
+                value = _reg[ident]
+            else:
+                _reg[ident] = value
             setattr(obj, self.name, value)
-
         return visit
 
     def _init(self, obj):
@@ -255,19 +285,26 @@ class BaseMany(BaseLinker):
     def __delete__(self, obj):
         self.__get__(obj).clear()
 
-    def existing(self, obj, target):
+    def _existing(self, obj, target):
         return target is not None and target in self.__get__(obj)
 
-    def _build_on_visit(self, key):
-        def visit(obj, iter=key):
-            if isinstance(iter, str):
-                iter = getattr(obj.__class__, iter)
-            for value in iter(obj):
+    def _build_on_visit(self, key, _reg):
+        get_id = self._get_id
+
+        def visit(obj, key=key):
+            if isinstance(key, str):
+                key = getattr(obj.__class__, key)
+            for value in key(obj):
+                ident = get_id(value)
+                if ident in _reg:
+                    value = _reg[ident]
+                else:
+                    _reg[ident] = value
                 getattr(obj, self.name).add(value)
         return visit
 
     def _init(self, obj):
-        delegate = obj.__dict__[self.name] = self.many_class(obj, linker=self)
+        delegate = obj.__dict__[self.name] = self.many_class(obj, linker=self, get_id=self._get_id)
         return delegate
 
     def _set(self, obj, target):
@@ -286,6 +323,7 @@ class ManyMap(BaseMany):
 
 
 class ManyNamed(BaseMany):
+    get_id = attrgetter('name')
     many_class = DelegateNamedMap
 
 
