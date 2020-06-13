@@ -134,8 +134,8 @@ class BaseLinker(object):
                 return True
         return False
 
-    def walk(self, start_obj, key):
-        yield from Iterator(self.name).walk(start_obj, key=key)
+    def walk(self, start_obj, key, on_visit=None):
+        yield from Iterator(self.name).walk(start_obj, key=key, on_visit=on_visit)
 
     def is_cyclic(self, start_obj):
         seen = set()

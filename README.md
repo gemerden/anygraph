@@ -245,21 +245,23 @@ A more in-depth example can be found in `anygraph\recipes\shortest_path_in_grid.
 
 Another option is to iterate through the graph by picking the next node with a key function:
 ```python
+from random import choice
+
 class Person(object):
     friends = Many('friends')
 
 people = create_and_connect_people()
 
 # as an example, a random walk through the graph can be created with:
-for person in Person.friends.walk(people[0], key=lambda p: random.random()):
+for person in Person.friends.walk(people[0], key=lambda p: choice(p.friends)):
     print(person)
 
 # if you want a node to be pre-processed before showing up in the iteration, you can pass an on_visit function
-for person in Person.friends.walk(people[0], key=lambda p: random.random(), on_visit=lambda p: print(p)):
+for person in Person.friends.walk(people[0], key=lambda p: choice(p.friends), on_visit=lambda p: print(p)):
     pass
 
 ```
-`walk()` will run forever unless a dead-end is encountered (in the non-directed graph above this will never happen, because the the walk can always return to the last node) or you `break` out of the loop. Picking the next node essentially happens through `next_node = min(next_nodes, key=key)`. 
+`walk()` will run forever unless a dead-end is encountered (in the non-directed graph above this will never happen, because the the walk can always return to the last node) or you `break` out of the loop. Picking the next node essentially happens through `next_node = key(node)`. 
 
 ### Mixed Nodes
 

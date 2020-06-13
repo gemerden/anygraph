@@ -78,13 +78,14 @@ class BaseIterator(object):
         else:
             return self._dijkstra(start_obj, target_obj, get_cost)
 
-    def walk(self, start_obj, key, on_visit=None):
-        obj = start_obj
+    def walk(self, obj, key, on_visit=None):
         while True:
             if on_visit:
                 on_visit(obj)
             yield obj
-            obj = min(self.iter_object(obj), key=key)
+            obj = key(obj)
+            if obj is None:
+                break
 
     def _dijkstra(self, start_obj, target_obj, get_cost):
         """
