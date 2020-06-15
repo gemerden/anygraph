@@ -30,5 +30,5 @@ setup(
         'Programming Language :: Python :: 3.8',
     ],
     python_requires='>=3.6',
-    keywords='graphs descriptors iterators easy-to-use',
+    keywords='graphs trees descriptors iterators easy-to-use depth-first breadth-first dijkstra astar A*',
 )
