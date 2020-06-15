@@ -157,11 +157,10 @@ class BaseLinker(object):
         get_id = self._get_id
 
         forw_iterator = Iterator(self.name)
-        back_iterator = Iterator(self.reverse_name)
+        back_iterator = Iterator(self.reverse_name) if self.reverse_name else None
 
         gathered = {}
         queue = deque([start_obj])
-
         while len(queue):
             obj = queue.popleft()
             gathered[get_id(obj)] = obj
@@ -169,10 +168,11 @@ class BaseLinker(object):
             for forw_obj in forw_iterator.iter_object(obj):
                 if get_id(forw_obj) not in gathered:
                     queue.append(forw_obj)
-
-            for back_obj in back_iterator.iter_object(obj):
-                if get_id(back_obj) not in gathered:
-                    queue.append(back_obj)
+                    
+            if back_iterator:
+                for back_obj in back_iterator.iter_object(obj):
+                    if get_id(back_obj) not in gathered:
+                        queue.append(back_obj)
 
         return list(gathered.values())
 
