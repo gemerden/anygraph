@@ -4,12 +4,19 @@ Here we will create a tree graph, using inheritance have separate classes for th
 """
 from anygraph import Many, One
 
+class BaseNode(object):
+    """ just add a name for printing """
+    def __init__(self, name):
+        self.name = name
 
-class ParentNode(object):
+    def __repr__(self):
+        return self.name
+
+class ParentNode(BaseNode):
     children = Many('parent')
 
 
-class ChildNode(object):
+class ChildNode(BaseNode):
     parent = One('children')
 
 
@@ -28,11 +35,13 @@ class TreeLeaf(ChildNode):
     pass
 
 """
-That is basically all, but not that interesting yet. Using the relationships you can easily add useful methods to the classes. 
+That is basically all, but not that interesting yet. Using the relationships you can easily add useful methods to the classes.
+
+We will re-use the names for readability. 
 """
 
 
-class ParentNode(object):
+class ParentNode(BaseNode):
     parent = None
     children = Many('parent')
 
@@ -43,7 +52,7 @@ class ParentNode(object):
         yield from self.__class__.children.iterate(self)
 
 
-class ChildNode(object):
+class ChildNode(BaseNode):
     parent = One('children')
 
     def root(self):
@@ -81,3 +90,28 @@ Note that the methods of Many/One are useful but often not needed. The calling p
 can be seen in ParentNode.iterdown().
 
 """
+
+
+""" let's try it out """
+if __name__ == '__main__':
+
+    root = TreeRoot('root')
+    root.children = [TreeBranch(f"branch_{i}") for i in range(3)]
+    for i, branch in enumerate(root.children):
+        branch.children = [TreeLeaf(f"leaf_{i}_{j}") for j in range(2)]
+
+    """ get the TreeLeaf nodes """
+    leaves = list(ParentNode.children.endpoints(root))
+
+    print('all the leaves:', leaves)
+
+    """ check the root """
+    assert all(leaf.root() is root for leaf in leaves)
+
+    """ check siblings """
+    a_branch = list(root.children)[0]
+    assert a_branch.siblings() == list(root.children)[1:]
+
+
+
+
