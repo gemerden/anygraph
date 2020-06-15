@@ -28,7 +28,7 @@ Anygraph can be installed using pip:
 
 `> pip install anygraph`
 
-Anygraph has _no dependencies_.
+Anygraph has _no dependencies_. It runs on Python 3.6 and higher.
 
 ## Testing
 
@@ -51,15 +51,15 @@ More powerful is the ability to create double linked graphs. In that case `One` 
 class Person(object): # a non-directed graph
     friends = Many('friends') 
 
-class Node(object): # a directed graph with reverse relationship
+class Node(object): # a double-linked directed graph
     nexts = Many('prevs')
     prevs = Many('nexts')
 
-class TreeNode(object):  # a tree graph
+class TreeNode(object):  # a  double-linked tree graph
     parent = One('children')
     children = Many('parent')
 
-class Link(object): # or a chain of objects
+class Link(object): # or a  double-linked chain of objects
     next_link = One('prev_link')
     prev_link = One('next_link')
 ```
