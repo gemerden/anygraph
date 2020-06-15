@@ -89,8 +89,8 @@ class DelegateNamedMap(DelegateMap):
 class BaseLinker(object):
     get_id = id  # default
 
-    def __init__(self, target_name=None, cyclic=True, to_self=True, on_link=None, on_unlink=None, get_id=None):
-        self.target_name = target_name
+    def __init__(self, reverse_name=None, cyclic=True, to_self=True, on_link=None, on_unlink=None, get_id=None):
+        self.reverse_name = reverse_name
         self.cyclic = cyclic
         self.to_self = to_self
         self._do_on_link = on_link
@@ -110,8 +110,7 @@ class BaseLinker(object):
             return self._init(obj)
 
     def iterate(self, start_obj, cyclic=False, breadth_first=False):
-        iterator = Iterator(self.name)
-        yield from iterator(start_obj, cyclic=cyclic, breadth_first=breadth_first)
+        yield from Iterator(self.name).iterate(start_obj, cyclic=cyclic, breadth_first=breadth_first)
 
     __call__ = iterate  # shortcut to iteration
 
@@ -123,6 +122,15 @@ class BaseLinker(object):
         build_on_visit = self._build_on_visit(key, _reg={})
         self.visit(start_obj, on_visit=build_on_visit, breadth_first=True)
         return self
+
+    def gather(self, start_obj):  # bit slow
+        get_id = self._get_id
+        gathered = {get_id(obj): obj for obj in self.iterate(start_obj)}  # dict so no doubles but with non-hashable objs
+        if self.reverse_name and self.name != self.reverse_name:
+            for obj in gathered.values():
+                for rev_obj in Iterator(self.reverse_name)(obj):  # follow the reverse relationship
+                    gathered[get_id(rev_obj)] = rev_obj
+        return list(gathered.values())
 
     def find(self, start_obj, filter):
         return [obj for obj in self.iterate(start_obj, breadth_first=True) if filter(obj)]
@@ -136,6 +144,14 @@ class BaseLinker(object):
 
     def walk(self, start_obj, key, on_visit=None):
         yield from Iterator(self.name).walk(start_obj, key=key, on_visit=on_visit)
+
+    def endpoints(self, start_obj):
+        endpoints = []
+        iterator = Iterator(self.name)
+        for obj in iterator(start_obj):
+            if not list(iterator.iter_object(obj)):
+                endpoints.append(obj)
+        return endpoints
 
     def is_cyclic(self, start_obj):
         seen = set()
@@ -161,9 +177,9 @@ class BaseLinker(object):
                                                  heuristic=heuristic)
 
     def _reverse(self, target):
-        if self.target_name is None:
+        if self.reverse_name is None:
             return None
-        return getattr(target.__class__, self.target_name)
+        return getattr(target.__class__, self.reverse_name)
 
     def _existing(self, obj, target):
         raise NotImplementedError
@@ -171,7 +187,7 @@ class BaseLinker(object):
     def _creates_cycle(self, obj, target):
         if obj is target:
             return True
-        if self.name == self.target_name:
+        if self.name == self.reverse_name:
             return True
         if target is None:
             return False
@@ -192,25 +208,25 @@ class BaseLinker(object):
 
     def _link(self, obj, target):
         self._set(obj, target)
-        if self.target_name:
+        if self.reverse_name:
             self._reverse(target)._set(target, obj)
 
     def _unlink(self, obj, target=None):
         if target is not None:
-            if self.target_name:
+            if self.reverse_name:
                 self._reverse(target)._del(target, obj)
             self._del(obj, target)
 
     def _on_link(self, obj, target, _remote=False):
         if self._do_on_link:
             return self._do_on_link(obj, target)
-        if self.target_name and not _remote:
+        if self.reverse_name and not _remote:
             return self._reverse(target)._on_link(target, obj, True)
 
     def _on_unlink(self, obj, target, _remote=False):
         if self._do_on_unlink:
             return self._do_on_unlink(obj, target)
-        if self.target_name and not _remote:
+        if self.reverse_name and not _remote:
             return self._reverse(target)._on_unlink(target, obj, True)
 
     def _init(self, obj):
@@ -232,7 +248,7 @@ class One(BaseLinker):
         self._check(obj, target)
         self._unlink(obj)
         if target is not None:
-            if self.target_name:
+            if self.reverse_name:
                 self._reverse(target)._unlink(target)
             self._on_link(obj, target)
             self._link(obj, target)
@@ -249,15 +265,15 @@ class One(BaseLinker):
         get_id = self._get_id
 
         def visit(obj):
-            if callable(key):
-                value = key(obj)
-            else:
+            if isinstance(key, str):
                 value = getattr(obj, key)
-            ident = get_id(value)
-            if ident in _reg:
-                value = _reg[ident]
             else:
-                _reg[ident] = value
+                value = key(obj)
+            id_ = get_id(value)
+            if id_ in _reg:
+                value = _reg[id_]
+            else:
+                _reg[id_] = value
             setattr(obj, self.name, value)
         return visit
 
