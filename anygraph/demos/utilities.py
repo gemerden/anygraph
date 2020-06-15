@@ -29,7 +29,7 @@ if __name__ == '__main__':
     """ anyone has about 1/3 of the others as friends """
     for p1 in peeps:
         for p2 in peeps:
-            if p1 is not p2 and flipcoin(0.33):
+            if p1 is not p2 and flipcoin(1/3):
                 p1.friends.add(p2)
 
     """ lets see what we got """
@@ -43,7 +43,7 @@ if __name__ == '__main__':
     """ same but breadth first iteration """
     print('breadth first:', list(Person.friends.iterate(bob, breadth_first=True)))
 
-    """ same again but now cyclic and with a break ;-) """
+    """ same again but now cyclic and with a break """
     print('\ncyclic iteration:')
     for i, peep in enumerate(Person.friends.iterate(bob, cyclic=True, breadth_first=True)):
         if i >= 10:
@@ -69,7 +69,7 @@ if __name__ == '__main__':
 
     """ randomly walk through the graph (indefinitely if not stopped) """
     print('\nrandom walk:')
-    for i, peep in enumerate(Person.friends.walk(ann, key=lambda p: random.random())):
+    for i, peep in enumerate(Person.friends.walk(ann, key=lambda p: random.choice(list(p.friends)))):
         if i >= 10:
             break
         print(i, peep)
