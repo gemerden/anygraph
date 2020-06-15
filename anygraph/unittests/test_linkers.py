@@ -639,6 +639,31 @@ class TestDoubleLinkers(unittest.TestCase):
         assert ann.next == pip
         assert pip.prev == ann
 
+    def test_gather(self):
+        class Test(object):
+            nexts = Many('prevs')
+            prevs = Many('nexts')
+
+            def __init__(self, name):
+                self.name = name
+
+            def __repr__(self):
+                return self.name
+
+        bob = Test('bob')
+        ann = Test('ann')
+        pete = Test('pete')
+        howy = Test('howy')
+
+        bob.nexts.add(ann)
+        ann.prevs.add(pete)
+        pete.nexts.update([howy, bob])
+
+        print(Test.nexts.gather(bob))
+
+        assert Test.nexts.gather(bob) == [bob, ann, pete, howy]
+
+
 
 
 

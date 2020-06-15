@@ -1,3 +1,4 @@
+from collections import deque
 from collections.abc import MutableSet
 from operator import attrgetter
 
@@ -154,11 +155,25 @@ class BaseLinker(object):
         Gather all nodes in a graph, going forward and backward if reverse_name is defined.
         """
         get_id = self._get_id
-        gathered = {get_id(obj): obj for obj in self.iterate(start_obj)}  # dict so no doubles but with non-hashable objs
-        if self.reverse_name and self.name != self.reverse_name:
-            for obj in gathered.values():
-                for rev_obj in Iterator(self.reverse_name)(obj):  # follow the reverse relationship
-                    gathered[get_id(rev_obj)] = rev_obj
+
+        forw_iterator = Iterator(self.name)
+        back_iterator = Iterator(self.reverse_name)
+
+        gathered = {}
+        queue = deque([start_obj])
+
+        while len(queue):
+            obj = queue.popleft()
+            gathered[get_id(obj)] = obj
+
+            for forw_obj in forw_iterator.iter_object(obj):
+                if get_id(forw_obj) not in gathered:
+                    queue.append(forw_obj)
+
+            for back_obj in back_iterator.iter_object(obj):
+                if get_id(back_obj) not in gathered:
+                    queue.append(back_obj)
+
         return list(gathered.values())
 
     def find(self, start_obj, filter):
