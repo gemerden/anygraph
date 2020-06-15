@@ -4,8 +4,8 @@ Here we will show how to build a graph from a class inheritance structure. Since
 from anygraph import Many
 
 """ 
-First we define the wrapper class; because we create instances of ClassWrapper on the flight, 
-even if the class was already encountered, we need to use a custom get_id to detect that situation.
+First we define the wrapper class; because we create instances of ClassWrapper on the flight; 
+to detect if the class was already encountered, we need to use a custom get_id function.
 """
 
 class ClassWrapper(object):
@@ -34,6 +34,7 @@ def build(cls):
     ClassWrapper.base_classes.build(wrapped_class, key=get_bases)
     return wrapped_class
 
+
 if __name__ == '__main__':
     """ create some class hierarchy: """
 
@@ -55,7 +56,7 @@ if __name__ == '__main__':
     print([w.__name__ for w in ClassWrapper.sub_classes(wrapped_object, breadth_first=True)])
 
     """
-    Note that iterating over base_classes depth- or breadth-first as seen above, does not 
+    Note that iterating over base_classes depth- or breadth-first, does not 
     always produce the same order as the mro() algorithm used by python 
     """
 
