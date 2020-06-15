@@ -2,7 +2,7 @@ from collections.abc import MutableSet
 from operator import attrgetter
 
 from anygraph.tools import unique_name
-from anygraph.visitors import Iterator, Visitor, Found
+from anygraph.visitors import Iterator, Visitor
 
 
 class DelegateSet(MutableSet):
@@ -87,9 +87,20 @@ class DelegateNamedMap(DelegateMap):
 
 
 class BaseLinker(object):
+    """
+    Baseclass for One and Many descriptors, with shared functionality.
+    """
     get_id = id  # default
 
     def __init__(self, reverse_name=None, cyclic=True, to_self=True, on_link=None, on_unlink=None, get_id=None):
+        """
+        :param reverse_name: optional name of the reverse realtionship
+        :param cyclic: whether the graph is allowed to be cyclic
+        :param to_self: whether an node the graph is allowed to connect ot itself
+        :param on_link(obj, next_obj): optional callback called just before a connection is made
+        :param on_unlink(obj, next_obj): optional callback called just before a connection is broken
+        :param get_id(obj): optional alternative callback to uniquely identify nodes
+        """
         self.reverse_name = reverse_name
         self.cyclic = cyclic
         self.to_self = to_self
@@ -99,31 +110,49 @@ class BaseLinker(object):
         self.name = None
 
     def __set_name__(self, cls, name):
-        self.name = name
+        self.name = name  # sets the name of the attribute when the interpreter first encounters the descriptor in a class
 
     def __get__(self, obj, cls=None):
         if obj is None:
-            return self
+            return self  # used to call methods on the descriptor (like 'iterate' below)
         try:
             return obj.__dict__[self.name]
         except KeyError:
-            return self._init(obj)
+            return self._init(obj)  # initializes attribute on first access
 
     def iterate(self, start_obj, cyclic=False, breadth_first=False):
+        """
+        iterate through the graph
+        :param start_obj: starting object from which the graph is followed
+        :param cyclic: whether nodes in the graph will be repeated
+        :param breadth_first: depth_first iteration if false (default) else breadth_first iteration
+        :yield: nodes in the graph
+        """
         yield from Iterator(self.name).iterate(start_obj, cyclic=cyclic, breadth_first=breadth_first)
 
     __call__ = iterate  # shortcut to iteration
 
     def visit(self, start_obj, on_visit, cyclic=False, breadth_first=False):
+        """ apply 'on_visit(obj, next_obj)' on the graph, other arguments as in 'iterate' """
         visitor = Visitor(self.name)
         return visitor(start_obj, on_visit, cyclic=cyclic, breadth_first=breadth_first)
 
     def build(self, start_obj, key='__iter__'):
+        """
+        Build a graph using a key function to find next nodes.
+        :param start_obj: entry point object for which the graph is built
+        :param key: if str: use attribute with name 'key' of encountered objects to find next objects,
+                    if callable: must return the (an iterable of) the next objects in the graph
+        :return: self: to chain a call to another method if you like.
+        """
         build_on_visit = self._build_on_visit(key, _reg={})
         self.visit(start_obj, on_visit=build_on_visit, breadth_first=True)
         return self
 
     def gather(self, start_obj):  # bit slow
+        """
+        Gather all nodes in a graph, going forward and backward if reverse_name is defined.
+        """
         get_id = self._get_id
         gathered = {get_id(obj): obj for obj in self.iterate(start_obj)}  # dict so no doubles but with non-hashable objs
         if self.reverse_name and self.name != self.reverse_name:
@@ -133,9 +162,11 @@ class BaseLinker(object):
         return list(gathered.values())
 
     def find(self, start_obj, filter):
+        """ return objects that pass the filer callback """
         return [obj for obj in self.iterate(start_obj, breadth_first=True) if filter(obj)]
 
     def reachable(self, start_obj, target_obj):
+        """ return whether target_obj can be reached from start_obj through the graph """
         iterator = Iterator(self.name)
         for obj in iterator(start_obj):
             if target_obj in iterator.iter_object(obj):
@@ -143,9 +174,17 @@ class BaseLinker(object):
         return False
 
     def walk(self, start_obj, key, on_visit=None):
+        """
+        iterate through the graph, with a key function selecting the next connected node
+        :param start_obj: starting point in the graph
+        :param key: function to pick the next node in the graph, as in 'next_node = key(node)'
+        :param on_visit: optional callback applied to the visited node
+        :return: yield nodes encountered in the graph one-by-one
+        """
         yield from Iterator(self.name).walk(start_obj, key=key, on_visit=on_visit)
 
     def endpoints(self, start_obj):
+        """ return a list of endpoint nodes (with no next node in the graph), starting from start_obj"""
         endpoints = []
         iterator = Iterator(self.name)
         for obj in iterator(start_obj):
@@ -154,6 +193,7 @@ class BaseLinker(object):
         return endpoints
 
     def is_cyclic(self, start_obj):
+        """ returns whether any cycles are in the graph reachable from start_obj"""
         seen = set()
         cyclic = False
 
@@ -169,9 +209,20 @@ class BaseLinker(object):
         return cyclic
 
     def in_cycle(self, start_obj):
+        """ return whether start_obj is in a cycle (whether it can be reached from itself)"""
         return self.reachable(start_obj, start_obj)
 
     def shortest_path(self, start_obj, target_obj, get_cost=None, heuristic=None):
+        """
+         Finds the shortest path through the graph from start_obj to target_obj
+        :param start_obj: node to start from
+        :param target_obj: node to which the path must be calculated
+        :param get_cost(node, next_node): cost function: must return cost for following edge between node and next_node. Default
+            results in a shortest path defined by the number of edges between start and end.
+        :param heuristic(node, target_node): optional heuristic function to calculate an under estimate of the remaining
+            cost from a node to the target node (often resulting in faster path_finding, using A*).
+        :return: list of nodes of the shortest path
+        """
         return Iterator(self.name).shortest_path(start_obj, target_obj,
                                                  get_cost=get_cost,
                                                  heuristic=heuristic)
@@ -320,8 +371,8 @@ class BaseMany(BaseLinker):
         return visit
 
     def _init(self, obj):
-        delegate = obj.__dict__[self.name] = self.many_class(obj, linker=self, get_id=self._get_id)
-        return delegate
+        obj.__dict__[self.name] = self.many_class(obj, linker=self, get_id=self._get_id)
+        return obj.__dict__[self.name]
 
     def _set(self, obj, target):
         self.__get__(obj)._set(target)

@@ -177,15 +177,17 @@ class Visitor(BaseIterator):
 
 
 class BaseVisitor(BaseIterator):
-
+    """ baseclass to run through a graph and apply changes to nodes or gather information """
     def get_store(self):
+        """ override to create argument for visit function to store results """
         return None
 
     def __call__(self, obj, cyclic=False, breadth_first=False):
+        """ run through the graph and apply 'self.visit' """
         visit = self.visit
         store = self.get_store()
         try:
-            for obj in self.iterate(obj, breadth_first):
+            for obj in self.iterate(obj, cyclic, breadth_first):
                 result = visit(obj, store)
                 if result is not None:
                     return self.post_process(result)
@@ -194,39 +196,31 @@ class BaseVisitor(BaseIterator):
         return self.post_process(store)
 
     def visit(self, obj, store):
+        """
+        Applied to every obj (node) in the graph; return a result (not None) or raise StopIteration to
+        jump out of the iteration.
+        """
         raise NotImplementedError
 
     def post_process(self, store):
+        """ optionally post_process the store before returning it """
         return store
 
-
-class Gather(BaseVisitor):
-    def __init__(self, prop_name, filter=lambda obj: True):
-        super().__init__(prop_name)
-        self.filter = filter
-
-    def get_store(self):
-        return []
-
-    def visit(self, obj, store):
-        if self.filter(obj):
-            store.append(obj)
-
-
 class BaseFinder(object):
+    """ adds filter to instance to be used in search like sub-classes """
     def __init__(self, prop_name, filter):
         super().__init__(prop_name, cyclic=False)
         self.filter = filter
 
 
 class Has(BaseFinder, BaseIterator):
-
+    """ return whether there are any nodes that pass .filter """
     def __call__(self, obj, breadth_first=False):
-        return any(map(self.filter, self.iterate(obj, breadth_first)))
+        return any(map(self.filter, self.iterate(obj, breadth_first=breadth_first)))
 
 
 class Find(BaseFinder, BaseVisitor):
-
+    """ gather all nodes that pass .filter """
     def get_store(self):
         return []
 
@@ -236,14 +230,14 @@ class Find(BaseFinder, BaseVisitor):
 
 
 class FindOne(BaseFinder, BaseVisitor):
-
+    """ return the first node that passes filter """
     def visit(self, obj, store):
         if self.filter(obj):
             return obj
 
 
 class GetEndpoints(BaseVisitor):
-
+    """ gather all nodes that is an endpoint in the graph """
     def get_store(self):
         return []
 

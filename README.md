@@ -6,12 +6,13 @@ _The easiest way to construct and use graphs in Python_
 
 Graphs and especially double-linked graphs (with relations going for- and backwards) are often useful, but easy to get wrong. After having written a number of tree and other graph libraries, usually as mixin classes, I found a different solution that has a number of advantages. Is consists of only 2 classes: `One` and `Many` and only a few optional parameters. With these classes you can create many types of graph, which in turn opens the way to a number of (included) algorithms associated with graphs and graph traversal.    
 
+Alternatives that I could find on github or PYPI did not meet my requirements, either being inflexible/more coupled (e.g. requiring inheritance), or missing easy-to-find documention.
+
 _Anygraph_ is a very easy-to-use library to add single and double sided relationships between objects. This can be used to construct trees, directed and non-directed graphs, cyclic and non-cyclic graphs.
 
 _Anygraph_ also includes methods for:
-* single- and double-linked graphs
 * Depth and breadth-first iteration,
-* Building a graph from any relationship between objects, of the same or different classes,
+* _Building_ a graph from any relationship between objects, of the same or different classes,
 * Dijkstra and A* shortest path algorithms,
 * Applying a function to each connected node in the graph, possibly altering the graph, 
 * Traversing the graph with a key-function to select the next node,
