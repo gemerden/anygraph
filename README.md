@@ -16,6 +16,8 @@ _Anygraph_ also includes methods for:
 * Applying a function to each connected node in the graph, possibly altering the graph, 
 * Traversing the graph with a key-function to select the next node,
 * Checking for cycles or if a node is reachable from another node,
+* Gathering all nodes in the graph, from forward and backward relationships,
+* Finding the endpoints of the graph, where progression is no longer possible.
 
 No inheritance is needed, a graph structure can simply be added to a class by setting one or two class attributes on your (possibly existing) class.
 
@@ -31,13 +33,9 @@ Anygraph has _no dependencies_.
 
 Unittests can be found in `anygraph/unittests`
 
-## Samples
+## The Basics
 
-More examples can be found in the `demos` and `recipes` directories. Below are some of the basics:
-
-### The Basics
-
-Anygraph uses two classes: `One` and `Many`. Single linked graphs enable a number of algorithms (as long as ou follow the graph only in one direction) and can be defined as follows:
+Anygraph uses two classes: `One` and `Many`. Single linked graphs enable a number of algorithms (as long as you follow the graph only in one direction) and can be defined as follows:
 ```python
 from anygraph import One, Many
 
@@ -47,7 +45,7 @@ class SomeLink(object): # a directed chain
 class SomeNode(object): # a directed graph
     next_nodes = Many() 
 ```
-More powerful is the ability to create double linked graphs. In that case only giving the name of the reverse relationship is sufficient:
+More powerful is the ability to create double linked graphs. In that case `One` and `Many` need to be initialized with the name of the reverse relationship:
 ```python
 class Person(object): # a non-directed graph
     friends = Many('friends') 
@@ -119,6 +117,32 @@ node = Node()
 node.nexts.add(node)  # raises ValueError
 ```
 This will also cause a `ValueError` to be raised when tried. Note that `cyclic=False` will also prevent self-reference.
+
+> These are the basics for creating a number of different types of graph. Creating graphs in this decoupled way, makes it 
+>relatively easy to add functionality. Below are a number methods that can be applied to these graphs out-of-the-box 
+>(most of which I have re-implemented a number of times in the past, because the graph logic was too tightly coupled 
+>to the rest of the code). 
+
+## Samples
+
+Below are code samples for the use of extra functionality that is currently included in _anygraph_. More examples can be found in the `demos` and `recipes` directories. 
+
+These methods are implemented on both `One` and `many`:
+
+* `.iterate(start_obj, cyclic=False, breadth_first=False)`: iterate through the graph, depth- or breadth-first, allowing revisiting nodes or not,
+* `.build(start_obj, key='__iter__')`: build a graph using a key function that iterates over the next nodes to be inserted in the graph,
+* `.visit(start_obj, on_visit, cyclic=False, breadth_first=False)`: run through graph and apply on_visit to each node that is encountered,
+* `.shortest_path(start_obj, target_obj, get_cost=None, heuristic=None)`: returns the shortest path using A* or Dijkstra if a heuristic is missing,
+* `.walk(start_obj, key, on_visit=None)`: iterate over the graph using a key-function that returns the next node from `key(node)`,
+* `.endpoints(start_obj)`: iterate over the graph and gather the nodes that do not have a next node,
+* `.gather(start_obj)`: gather all nodes in the graph reachable from `start_obj` in a list, following the forward and reverse (if present) relationships.
+
+At the bottom of the charter there are some more samples:
+
+* Creating a graph that consists of nodes of different classes, mixing both `One` and `Many`,
+* Using `on_link(...)` and `on_unlink(...)` callbacks to add do extra logic when nodes are linked or unlinked.
+
+Note that all these methods are called as e.g. `Person.friends.some_method(start_obj, ...)`; on the `Person` class, not on an instance of `Person`. This is inherent to the use of descriptors. 
 
 ### Graph Iteration
 
@@ -197,6 +221,7 @@ Notes:
 * The graph will build cyclic relationships when it encounters repeated instances, identified with the python `id` function. This can be overridden by setting another id function in the relationship constructor, as in: `children = Many('parent', get_id=lambda obj: obj.name)`. 
 
 A more in-depth example can be found in `anygraph\recipes\building_a_graph.py`
+
 ### Visiting the Graph
 
 Another useful utility is the `.visit()` method. It is used to traverse the graph and apply a function/callable on any node encountered (using the example above):
