@@ -95,7 +95,7 @@ class BaseLinker(object):
 
     def __init__(self, reverse_name=None, cyclic=True, to_self=True, on_link=None, on_unlink=None, get_id=None):
         """
-        :param reverse_name: optional name of the reverse realtionship
+        :param reverse_name: optional name of the reverse relationship
         :param cyclic: whether the graph is allowed to be cyclic
         :param to_self: whether an node the graph is allowed to connect ot itself
         :param on_link(obj, next_obj): optional callback called just before a connection is made
@@ -247,9 +247,6 @@ class BaseLinker(object):
             return None
         return getattr(target.__class__, self.reverse_name)
 
-    def _existing(self, obj, target):
-        raise NotImplementedError
-
     def _creates_cycle(self, obj, target):
         if obj is target:
             return True
@@ -302,6 +299,9 @@ class BaseLinker(object):
         raise NotImplementedError
 
     def _del(self, obj, target):
+        raise NotImplementedError
+
+    def _existing(self, obj, target):
         raise NotImplementedError
 
     def _build_on_visit(self, key, _reg):
