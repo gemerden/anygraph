@@ -17,7 +17,7 @@ class TestPropagator(unittest.TestCase):
         objs = [self.TestMany('bob_' + str(i)) for i in range(count)]
         for i, obj in enumerate(objs):
             for next_obj in objs[i + 1:]:
-                obj.nexts.add(next_obj)
+                obj.nexts.include(next_obj)
         return objs
 
     def back_wire(self, objs):
@@ -83,7 +83,7 @@ class testPathMethods(unittest.TestCase):
             for i, node1 in enumerate(nodes):
                 for j, node2 in enumerate(nodes):
                     if matrix[i][j]:
-                        node1.nexts.add(node2)
+                        node1.nexts.include(node2)
 
         size, prob = 10, 0.2
         matrix = create_matrix(size, prob=prob)
@@ -121,7 +121,7 @@ class testPathMethods(unittest.TestCase):
                 for di, dj in product([-1, 0, 1], [-1, 0, 1]):
                     try:
                         if flipcoin() or i == 0 or j == 0:
-                            node.nexts.add(nodes_dict[i + di, j + dj])
+                            node.nexts.include(nodes_dict[i + di, j + dj])
                     except KeyError:
                         pass
 

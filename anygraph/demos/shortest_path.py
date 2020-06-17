@@ -28,15 +28,15 @@ def connect_nodes(nodes_dict, prob=0.5):
         for di, dj in [(1, 0), (0, 1), (-1, 0), (0, -1)]:
             if flipcoin(prob):
                 try:
-                    node.adjacent.add(nodes_dict[i + di, j + dj])
+                    node.adjacent.include(nodes_dict[i + di, j + dj])
                 except KeyError:  # index outside grid
                     pass
 
     """ make certain there is at least one path (random adjacents might cause that no path is present)"""
     side = max(nodes_dict)[0] + 1  # quick and dirty retrieve grid side size
     for i in range(side - 1):
-        nodes_dict[i, i].adjacent.add(nodes_dict[i, i + 1])
-        nodes_dict[i, i + 1].adjacent.add(nodes_dict[i + 1, i + 1])
+        nodes_dict[i, i].adjacent.include(nodes_dict[i, i + 1])
+        nodes_dict[i, i + 1].adjacent.include(nodes_dict[i + 1, i + 1])
 
 
 """ lets run: create nodes and connect """

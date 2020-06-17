@@ -1,4 +1,4 @@
-from .linkers import One, Many
+from .linkers import One, Many, ManyMap
 from .visitors import *
 
 

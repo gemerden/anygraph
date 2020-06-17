@@ -88,7 +88,7 @@ assert nodes[3] not in nodes[0].children
 In short: changes to a `One` or `Many` double linked relationship will always **update the reverse relationships** and break existing relationships when needed.
 
 * A `One` relationship supports the normal attribute operations: `n.parent = child`, `del n.parent`, `n.parent = None` (same as `del`)
-* A `Many` relationship supports the same methods and operations as abc.MutableSet (`.add`, `.remove`, `.discard`, `.update` + `&`, `|` `-`, etc.)  
+* A `Many` relationship supports the same methods and operations as the immutable abc.Set + `.include(*nexts), .exlude(*nexts), clear()` and assignment of an iterable  (e.g. `node.children = [child1, child2]`) and deletion (e.g. `del node.children`).  
 
 Note that the insertion order of the children is maintained; the underlying data-structure is a `dict`, not a `set`. Any object can be used as node in the graph, not only objects that are hashable. 
 

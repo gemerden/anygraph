@@ -38,7 +38,7 @@ if __name__ == '__main__':
         for i, node1 in enumerate(nodes):
             for j, node2 in enumerate(nodes):
                 if matrix[i][j]:
-                    node1.nexts.add(node2)
+                    node1.nexts.include(node2)
 
     """ lets make and print the connections in matrix form (c = connected) """
 

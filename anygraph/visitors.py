@@ -24,9 +24,12 @@ class BaseIterator(object):
         else:
             if attr is not None:
                 try:
-                    yield from attr
-                except TypeError:
-                    yield attr
+                    yield from attr.values()
+                except AttributeError:
+                    try:
+                        yield from attr
+                    except TypeError:
+                        yield attr
 
     def iterate(self, obj, cyclic=False, breadth_first=False):
         registry = None if cyclic else set()

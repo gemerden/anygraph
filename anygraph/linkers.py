@@ -1,26 +1,51 @@
 from collections import deque
-from collections.abc import MutableSet
+from collections.abc import Set, Mapping
 
+from anygraph.tools import unique_name
 from anygraph.visitors import Iterator, Visitor
 
 
-class DelegateSet(MutableSet):
+class BaseDelegate(object):
 
-    def __init__(self, owner, linker, get_id):
+    def __init__(self, owner, linker):
         super().__init__()
         self.targets = {}
         self.owner = owner
         self.linker = linker
-        self.get_id = get_id
 
     def __len__(self):
         return len(self.targets)
+
+    def include(self, *targets):
+        for target in targets:
+            if target is not None and target not in self.targets.values():
+                self.linker._check(self.owner, target)
+                self.linker._on_link(self.owner, target)
+                self.linker._link(self.owner, target)
+
+    def exclude(self, *targets):
+        for target in targets:
+            if target is not None and target in self.targets.values():
+                self.linker._unlink(self.owner, target)
+                self.linker._on_unlink(self.owner, target)
+
+    def clear(self):
+        self.exclude(*self.targets.values())
+
+    def _set(self, target):
+        raise NotImplementedError
+
+    def _del(self, target):
+        raise NotImplementedError
+
+
+class DelegateSet(BaseDelegate, Set):
 
     def __iter__(self):
         return iter(self.targets.values())
 
     def __contains__(self, target):
-        return self.get_id(target) in self.targets
+        return id(target) in self.targets
 
     def __getitem__(self, index):
         for i, key in enumerate(self.targets):
@@ -28,48 +53,51 @@ class DelegateSet(MutableSet):
                 return self.targets[key]
         raise IndexError(str(index))
 
-    def keys(self):
-        return self.targets.keys()
-
-    def values(self):
-        return self.targets.values()
-
-    def items(self):
-        return self.targets.items()
-
-    def get(self, key, _default=None):
-        return self.targets.get(key, _default)
-
-    def add(self, target):
-        if target is not None and self.get_id(target) not in self.targets:
-            self.linker._check(self.owner, target)
-            self.linker._on_link(self.owner, target)
-            self.linker._link(self.owner, target)
-
-    def discard(self, target):
-        if target is not None and self.get_id(target) in self.targets:
-            self.linker._unlink(self.owner, target)
-            self.linker._on_unlink(self.owner, target)
-
-    def update(self, targets):
-        for target in targets:
-            self.add(target)
-
-    def replace(self, targets):
-        self.clear()
-        self.update(targets)
-
     def _set(self, target):
-        self.targets[self.get_id(target)] = target
+        self.targets[id(target)] = target
 
     def _del(self, target):
-        self.targets.pop(self.get_id(target), None)
+        self.targets.pop(id(target), None)
 
     def __str__(self):
         return f"{{{', '.join(map(str, self))}}}"
 
     def __repr__(self):
         return f"{{{', '.join(map(repr, self))}}}"
+
+
+class DelegateMap(BaseDelegate, Mapping):
+
+    def __init__(self, owner, linker):
+        super().__init__(owner, linker)
+        self.get_key = linker.get_key
+
+    def __len__(self):
+        return len(self.targets)
+
+    def __iter__(self):
+        return iter(self.targets)
+
+    def __contains__(self, key):
+        return key in self.targets
+
+    def __getitem__(self, key):
+        return self.targets[key]
+
+    def _set(self, target):
+        self.targets[self.get_key(self.owner, target)] = target
+
+    def _del(self, target):
+        for key, targ in self.targets.items():
+            if target is targ:
+                return self.targets.pop(key, None)
+
+    def __str__(self):
+        return str(self.targets)
+
+    def __repr__(self):
+        return repr(self.targets)
+
 
 
 class BaseLinker(object):
@@ -280,7 +308,7 @@ class BaseLinker(object):
     def _init(self, obj):
         raise NotImplementedError
 
-    def _set(self, obj, value):
+    def _set(self, obj, target):
         raise NotImplementedError
 
     def _del(self, obj, target):
@@ -317,15 +345,15 @@ class One(BaseLinker):
 
         def visit(obj):
             if isinstance(key, str):
-                value = getattr(obj, key)
+                target = getattr(obj, key)
             else:
-                value = key(obj)
-            id_ = get_id(value)
+                target = key(obj)
+            id_ = get_id(target)
             if id_ in _reg:
-                value = _reg[id_]
+                target = _reg[id_]
             else:
-                _reg[id_] = value
-            setattr(obj, self.name, value)
+                _reg[id_] = target
+            setattr(obj, self.name, target)
         return visit
 
     def _init(self, obj):
@@ -343,17 +371,15 @@ class One(BaseLinker):
         super()._unlink(obj, target)
 
 
-class Many(BaseLinker):
-    many_class = DelegateSet
+class BaseMany(BaseLinker):
+    many_class = None
 
     def __set__(self, obj, targets):
-        self.__get__(obj).replace(targets)
+        self.__get__(obj).clear()
+        self.__get__(obj).include(*targets)
 
     def __delete__(self, obj):
         self.__get__(obj).clear()
-
-    def _existing(self, obj, target):
-        return target is not None and target in self.__get__(obj)
 
     def _build_on_visit(self, key, _reg):
         get_id = self._get_id
@@ -361,17 +387,18 @@ class Many(BaseLinker):
         def visit(obj, key=key):
             if isinstance(key, str):
                 key = getattr(obj.__class__, key)
-            for value in key(obj):
-                ident = get_id(value)
+            for target in key(obj):
+                ident = get_id(target)
                 if ident in _reg:
-                    value = _reg[ident]
+                    target = _reg[ident]
                 else:
-                    _reg[ident] = value
-                getattr(obj, self.name).add(value)
+                    _reg[ident] = target
+                getattr(obj, self.name).include(target)
+
         return visit
 
     def _init(self, obj):
-        obj.__dict__[self.name] = self.many_class(obj, linker=self, get_id=self._get_id)
+        obj.__dict__[self.name] = self.many_class(obj, linker=self)
         return obj.__dict__[self.name]
 
     def _set(self, obj, target):
@@ -379,6 +406,30 @@ class Many(BaseLinker):
 
     def _del(self, obj, target):
         self.__get__(obj)._del(target)
+
+
+class Many(BaseMany):
+    many_class = DelegateSet
+
+    def _existing(self, obj, target):
+        return target in self.__get__(obj)
+
+
+class ManyMap(BaseMany):
+    many_class = DelegateMap
+
+    def __init__(self, *args, key_attr='name', **kwargs):
+        super().__init__(*args, **kwargs)
+        self.key_attr = key_attr
+
+    def get_key(self, obj, target):
+        return unique_name(self.__get__(obj),
+                           target.__class__.__name__.lower(),
+                           getattr(target, self.key_attr, None))
+
+    def _existing(self, obj, target):
+        return target in self.__get__(obj).values()
+
 
 
 if __name__ == '__main__':

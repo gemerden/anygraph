@@ -29,7 +29,7 @@ def connect_nodes(nodes_dict):
     for (i, j), node in nodes_dict.items():
         for di, dj in [(-1, 0), (0, -1), (1, 0), (0, 1)]:
             try:
-                node.adjacent.add(nodes_dict[i + di, j + dj])
+                node.adjacent.include(nodes_dict[i + di, j + dj])
             except KeyError:  # index outside grid
                 pass
 

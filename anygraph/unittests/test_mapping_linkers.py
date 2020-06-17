@@ -1,65 +1,12 @@
 import unittest
 
-from anygraph import One, Many
+from anygraph import One, ManyMap
 
 class TestLinkers(unittest.TestCase):
 
-    def test_one(self):
-        class TestOne(object):
-            next = One()
-
-            def __init__(self, name):
-                self.name = name
-
-        bob = TestOne('bob')
-        ann = TestOne('ann')
-
-        bob.next = ann
-        assert bob.next is ann
-
-        assert list(TestOne.next.iterate(bob)) == [bob, ann]
-
-        del bob.next
-        assert bob.next is None
-
-        bob.next = ann
-        ann.next = bob
-        assert bob.next is ann
-        assert ann.next is bob
-
-        bob.next = bob
-        assert bob.next is bob
-
-    def test_triangle(self):
-        class TestOne(object):
-            next = One()
-
-            def __init__(self, name):
-                self.name = name
-
-        bob = TestOne('bob')
-        ann = TestOne('ann')
-        kik = TestOne('kik')
-
-        bob.next = ann
-        ann.next = kik
-        kik.next = bob
-
-        assert bob.next is ann
-        assert ann.next is kik
-        assert kik.next is bob
-
-        assert list(TestOne.next.iterate(bob)) == [bob, ann, kik]
-
-        del ann.next
-
-        assert ann.next is None
-        assert bob.next is ann
-        assert kik.next is bob
-
     def test_many(self):
         class TestMany(object):
-            nexts = Many()
+            nexts = ManyMap()
 
             def __init__(self, name):
                 self.name = name
@@ -72,15 +19,40 @@ class TestLinkers(unittest.TestCase):
         bob.nexts.include(ann, pete)
         pete.nexts.include(howy)
 
-        assert ann in bob.nexts
-        assert howy in pete.nexts
-        assert howy not in bob.nexts
+        assert list(bob.nexts) == ['ann', 'pete']
+
+        assert ann in bob.nexts.values()
+        assert howy in pete.nexts.values()
+        assert howy not in bob.nexts.values()
 
         assert list(TestMany.nexts.iterate(bob)) == [bob, ann, pete, howy]
 
+    def test_unnamed(self):
+        class Test(object):
+            nexts = ManyMap()
+
+        bob = Test()
+        ann = Test()
+        pete = Test()
+        howy = Test()
+
+        bob.nexts.include(ann, pete)
+        pete.nexts.include(howy)
+
+        assert list(bob.nexts) == ['test_0', 'test_1']
+        assert list(pete.nexts) == ['test_0']
+
+        bob.nexts.exclude(ann)
+        assert list(bob.nexts) == ['test_1']
+
+        bob.nexts.include(ann)
+        assert list(bob.nexts) == ['test_1', 'test_0']
+
+        assert list(Test.nexts.iterate(bob)) == [bob, pete, howy, ann]
+
     def test_cyclic(self):
         class TestMany(object):
-            nexts = Many(cyclic=False)
+            nexts = ManyMap(cyclic=False)
 
             def __init__(self, name):
                 self.name = name
@@ -96,22 +68,6 @@ class TestLinkers(unittest.TestCase):
         with self.assertRaises(ValueError):
             howy.nexts.include(bob)
 
-    def test_to_self(self):
-        class TestMany(object):
-            nexts = Many(to_self=False)
-
-            def __init__(self, name):
-                self.name = name
-
-        bob = TestMany('bob')
-
-        with self.assertRaises(ValueError):
-            bob.nexts.include(bob)
-
-        with self.assertRaises(ValueError):
-            bob.nexts = [bob]
-
-
     def test_on_link(self):
         on_link_results = []
         on_unlink_results = []
@@ -123,7 +79,7 @@ class TestLinkers(unittest.TestCase):
             on_unlink_results.append((one, two))
 
         class TestMany(object):
-            nexts = Many(on_link=on_link, on_unlink=on_unlink)
+            nexts = ManyMap(on_link=on_link, on_unlink=on_unlink)
 
             def __init__(self, name):
                 self.name = name
@@ -143,7 +99,7 @@ class TestLinkers(unittest.TestCase):
 
     def test_visitor(self):
         class TestMany(object):
-            nexts = Many()
+            nexts = ManyMap()
 
             def __init__(self, name):
                 self.name = name
@@ -172,7 +128,7 @@ class TestLinkers(unittest.TestCase):
     def test_builder_many_by_name(self):
 
         class TestBuilder(object):
-            nexts = Many()
+            nexts = ManyMap()
 
             def __init__(self, name, iterable=()):
                 self.name = name
@@ -195,17 +151,17 @@ class TestLinkers(unittest.TestCase):
         ann.extend(pete)
         howy.extend(ann)
 
-        assert bob.nexts == set()
+        assert bob.nexts == {}
 
         TestBuilder.nexts.build(bob)
 
-        assert bob.nexts == {ann, pete}
-        assert howy.nexts == {ann}
+        assert bob.nexts == dict(ann=ann, pete=pete)
+        assert howy.nexts == dict(ann=ann)
 
     def test_builder_many_by_func_cyclic(self):
 
         class TestBuilder(object):
-            nexts = Many()
+            nexts = ManyMap()
 
             def __init__(self, name, iterable=()):
                 self.name = name
@@ -226,9 +182,8 @@ class TestLinkers(unittest.TestCase):
 
         TestBuilder.nexts.build(bob, key=lambda obj: obj.items)
 
-        assert bob.nexts == {ann, pete}
-        assert pete.nexts == {howy, bob}
-        assert howy.nexts == {ann}
+        assert pete.nexts == dict(howy=howy, bob=bob)
+        assert howy.nexts == dict(ann=ann)
         assert TestBuilder.nexts.in_cycle(bob)
         assert TestBuilder.nexts.is_cyclic(bob)
 
@@ -261,77 +216,10 @@ class TestLinkers(unittest.TestCase):
 
 class TestDoubleLinkers(unittest.TestCase):
 
-    def test_one_one(self):
-        class TestOneOne(object):
-            left = One('right')
-            right = One('left')
-
-            def __init__(self, name):
-                self.name = name
-
-        bob = TestOneOne('bob')
-        ann = TestOneOne('ann')
-
-        bob.left = ann
-        assert bob.left is ann
-        assert ann.right is bob
-
-        assert list(TestOneOne.left.iterate(bob)) == [bob, ann]
-
-        del bob.left
-        assert bob.left is None
-        assert ann.right is None
-
-        bob.left = ann
-        ann.right = None
-        assert bob.left is None
-        assert ann.right is None
-
-        bob.left = bob
-        assert bob.left is bob
-        assert bob.right is bob
-
-        del bob.left
-        assert bob.left is None
-        assert bob.right is None
-
-    def test_triangle(self):
-        class TestOne(object):
-            next = One('prev')
-            prev = One('next')
-
-            def __init__(self, name):
-                self.name = name
-
-        bob = TestOne('bob')
-        ann = TestOne('ann')
-        kik = TestOne('kik')
-
-        bob.next = ann
-        ann.next = kik
-        kik.next = bob
-
-        assert bob.next is ann
-        assert ann.next is kik
-        assert kik.next is bob
-
-        assert bob.prev is kik
-        assert kik.prev is ann
-        assert ann.prev is bob
-
-        assert list(TestOne.next.iterate(bob)) == [bob, ann, kik]
-
-        del ann.prev
-
-        assert ann.prev is None
-        assert bob.next is None
-        assert ann.next is kik
-        assert kik.next is bob
-
     def test_many_many(self):
         class TestMany(object):
-            nexts = Many('prevs')
-            prevs = Many('nexts')
+            nexts = ManyMap('prevs')
+            prevs = ManyMap('nexts')
 
             def __init__(self, name):
                 self.name = name
@@ -344,17 +232,17 @@ class TestDoubleLinkers(unittest.TestCase):
         bob.nexts.include(ann, pete)
         pete.nexts.include(howy)
 
-        assert ann in bob.nexts
-        assert bob in ann.prevs
-        assert howy in pete.nexts
-        assert howy not in bob.nexts
+        assert ann in bob.nexts.values()
+        assert bob in ann.prevs.values()
+        assert howy in pete.nexts.values()
+        assert howy not in bob.nexts.values()
 
         assert list(TestMany.nexts.iterate(bob)) == [bob, ann, pete, howy]
 
     def test_one_many(self):
         class TestOneMany(object):
             parent = One('children')
-            children = Many('parent')
+            children = ManyMap('parent')
 
             def __init__(self, name):
                 self.name = name
@@ -367,10 +255,10 @@ class TestDoubleLinkers(unittest.TestCase):
         bob.children = [ann, pete]
         howy.parent = pete
 
-        assert ann in bob.children
+        assert ann in bob.children.values()
         assert bob is ann.parent
-        assert howy in pete.children
-        assert howy not in bob.children
+        assert howy in pete.children.values()
+        assert howy not in bob.children.values()
         assert howy.parent.parent is bob
 
         assert list(TestOneMany.children.iterate(bob)) == [bob, ann, pete, howy]
@@ -409,7 +297,7 @@ class TestDoubleLinkers(unittest.TestCase):
 
     def test_non_directed(self):
         class Test(object):
-            others = Many('others')
+            others = ManyMap('others')
 
             def __init__(self, name):
                 self.name = name
@@ -423,33 +311,33 @@ class TestDoubleLinkers(unittest.TestCase):
 
         bob.others.include(ann)
         bob.others.include(kik)
-        assert ann in bob.others
-        assert kik in bob.others
-        assert bob in ann.others
-        assert bob in kik.others
+        assert ann in bob.others.values()
+        assert kik in bob.others.values()
+        assert bob in ann.others.values()
+        assert bob in kik.others.values()
 
         kik.others.include(ann)
-        assert kik in ann.others
-        assert ann in kik.others
-        assert ann in bob.others
-        assert kik in bob.others
-        assert bob in ann.others
-        assert bob in kik.others
+        assert kik in ann.others.values()
+        assert ann in kik.others.values()
+        assert ann in bob.others.values()
+        assert kik in bob.others.values()
+        assert bob in ann.others.values()
+        assert bob in kik.others.values()
 
         assert list(Test.others.iterate(bob)) == [bob, ann, kik]
 
         kik.others.exclude(ann)
-        assert kik not in ann.others
-        assert ann not in kik.others
-        assert ann in bob.others
-        assert kik in bob.others
-        assert bob in ann.others
-        assert bob in kik.others
+        assert kik not in ann.others.values()
+        assert ann not in kik.others.values()
+        assert ann in bob.others.values()
+        assert kik in bob.others.values()
+        assert bob in ann.others.values()
+        assert bob in kik.others.values()
 
     def test_cyclic(self):
         class TestMany(object):
-            nexts = Many('prevs', cyclic=False)
-            prevs = Many('nexts')
+            nexts = ManyMap('prevs', cyclic=False)
+            prevs = ManyMap('nexts')
 
             def __init__(self, name):
                 self.name = name
@@ -481,8 +369,8 @@ class TestDoubleLinkers(unittest.TestCase):
             on_unlink_results.append((one, two))
 
         class TestMany(object):
-            nexts = Many('prevs', on_link=on_link, on_unlink=on_unlink)
-            prevs = Many('nexts')
+            nexts = ManyMap('prevs', on_link=on_link, on_unlink=on_unlink)
+            prevs = ManyMap('nexts')
 
             def __init__(self, name):
                 self.name = name
@@ -502,8 +390,8 @@ class TestDoubleLinkers(unittest.TestCase):
 
     def test_visitor(self):
         class TestMany(object):
-            nexts = Many('prevs')
-            prevs = Many('nexts')
+            nexts = ManyMap('prevs')
+            prevs = ManyMap('nexts')
 
             def __init__(self, name):
                 self.name = name
@@ -532,8 +420,8 @@ class TestDoubleLinkers(unittest.TestCase):
     def test_builder_many_by_name(self):
 
         class TestBuilder(object):
-            nexts = Many('prevs')
-            prevs = Many('nexts')
+            nexts = ManyMap('prevs')
+            prevs = ManyMap('nexts')
 
             def __init__(self, name, iterable=()):
                 self.name = name
@@ -561,21 +449,21 @@ class TestDoubleLinkers(unittest.TestCase):
         ann.extend(pete)
         howy.extend(ann)
 
-        assert bob.nexts == set()
-        assert ann.prevs == set()
+        assert bob.nexts == {}
+        assert ann.prevs == {}
 
         TestBuilder.nexts.build(bob)
 
-        assert bob.nexts == {ann, pete}
-        assert ann.prevs == {bob, howy}
-        assert howy.nexts == {ann}
-        assert howy.prevs == {pete}
+        assert bob.nexts == dict(ann=ann, pete=pete)
+        assert ann.prevs == dict(bob=bob, howy=howy)
+        assert howy.nexts == dict(ann=ann)
+        assert howy.prevs == dict(pete=pete)
 
     def test_builder_many_by_func(self):
 
         class TestBuilder(object):
-            nexts = Many('prevs')
-            prevs = Many('nexts')
+            nexts = ManyMap('prevs')
+            prevs = ManyMap('nexts')
 
             def __init__(self, name, iterable=()):
                 self.name = name
@@ -599,15 +487,15 @@ class TestDoubleLinkers(unittest.TestCase):
         ann.extend(pete)
         howy.extend(ann)
 
-        assert bob.nexts == set()
-        assert ann.prevs == set()
+        assert bob.nexts == dict()
+        assert ann.prevs == dict()
 
         TestBuilder.nexts.build(bob, key=lambda obj: obj.items)
 
-        assert bob.nexts == {ann, pete}
-        assert ann.prevs == {bob, howy}
-        assert howy.nexts == {ann}
-        assert howy.prevs == {pete}
+        assert bob.nexts == dict(ann=ann, pete=pete)
+        assert ann.prevs == dict(bob=bob, howy=howy)
+        assert howy.nexts == dict(ann=ann)
+        assert howy.prevs == dict(pete=pete)
 
     def test_builder_one(self):
 
@@ -641,8 +529,8 @@ class TestDoubleLinkers(unittest.TestCase):
 
     def test_gather(self):
         class Test(object):
-            nexts = Many('prevs')
-            prevs = Many('nexts')
+            nexts = ManyMap('prevs')
+            prevs = ManyMap('nexts')
 
             def __init__(self, name):
                 self.name = name

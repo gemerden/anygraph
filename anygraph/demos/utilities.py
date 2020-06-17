@@ -30,7 +30,7 @@ if __name__ == '__main__':
     for p1 in peeps:
         for p2 in peeps:
             if p1 is not p2 and flipcoin(1/3):
-                p1.friends.add(p2)
+                p1.friends.include(p2)
 
     """ lets see what we got """
     for person in peeps:
