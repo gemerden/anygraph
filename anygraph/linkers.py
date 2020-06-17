@@ -17,6 +17,7 @@ class BaseDelegate(object):
         return len(self.targets)
 
     def include(self, *targets):
+        """ adds and connects targets to the object owning this instance (self.owner) """
         for target in targets:
             if target is not None and target not in self.targets.values():
                 self.linker._check(self.owner, target)
@@ -24,13 +25,20 @@ class BaseDelegate(object):
                 self.linker._link(self.owner, target)
 
     def exclude(self, *targets):
+        """ removes and disconnects targets from the object owning this instance (self.owner) """
         for target in targets:
             if target is not None and target in self.targets.values():
                 self.linker._unlink(self.owner, target)
                 self.linker._on_unlink(self.owner, target)
 
     def clear(self):
+        """ removes all targets """
         self.exclude(*self.targets.values())
+
+    def one(self):
+        """ return a target (e.g. as entry point to the graph """
+        for target in self.targets.values():
+            return target
 
     def _set(self, target):
         raise NotImplementedError
@@ -48,6 +56,7 @@ class DelegateSet(BaseDelegate, Set):
         return id(target) in self.targets
 
     def __getitem__(self, index):
+        """ slow way to getting access to specific targets """
         for i, key in enumerate(self.targets):
             if i == index:
                 return self.targets[key]
@@ -83,6 +92,25 @@ class DelegateMap(BaseDelegate, Mapping):
 
     def __getitem__(self, key):
         return self.targets[key]
+
+    def rekey(self, old_key_or_target, new_key):
+        """ put same target under new _key; maintains order! """
+        if isinstance(old_key_or_target, str):
+            old_key = old_key_or_target
+        else:
+            old_key = self.find_key(old_key_or_target)
+        keys = list(self.targets)
+        index = keys.index(old_key)
+        below = {k: self.targets.pop(k) for k in keys[index+1:]}
+        self.targets[new_key] = self.targets.pop(old_key)
+        self.targets.update(below)
+
+    def find_key(self, target):
+        """ find the key of a target """
+        for key, targ in self.targets.items():
+            if target is targ:
+                return key
+        return None
 
     def _set(self, target):
         self.targets[self.get_key(self.owner, target)] = target

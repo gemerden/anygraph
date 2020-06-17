@@ -21,6 +21,13 @@ class TestLinkers(unittest.TestCase):
 
         assert list(bob.nexts) == ['ann', 'pete']
 
+        bob.nexts.rekey('ann', 'ann2')
+
+        assert list(bob.nexts) == ['ann2', 'pete']
+
+        assert bob.nexts.find_key(pete) == 'pete'
+        assert bob.nexts.find_key(ann) == 'ann2'
+
         assert ann in bob.nexts.values()
         assert howy in pete.nexts.values()
         assert howy not in bob.nexts.values()
