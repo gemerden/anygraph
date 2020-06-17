@@ -1,8 +1,6 @@
 from collections import deque
 from collections.abc import MutableSet
-from operator import attrgetter
 
-from anygraph.tools import unique_name
 from anygraph.visitors import Iterator, Visitor
 
 
@@ -23,6 +21,24 @@ class DelegateSet(MutableSet):
 
     def __contains__(self, target):
         return self.get_id(target) in self.targets
+
+    def __getitem__(self, index):
+        for i, key in enumerate(self.targets):
+            if i == index:
+                return self.targets[key]
+        raise IndexError(str(index))
+
+    def keys(self):
+        return self.targets.keys()
+
+    def values(self):
+        return self.targets.values()
+
+    def items(self):
+        return self.targets.items()
+
+    def get(self, key, _default=None):
+        return self.targets.get(key, _default)
 
     def add(self, target):
         if target is not None and self.get_id(target) not in self.targets:
@@ -54,37 +70,6 @@ class DelegateSet(MutableSet):
 
     def __repr__(self):
         return f"{{{', '.join(map(repr, self))}}}"
-
-
-class DelegateMap(DelegateSet):
-
-    def __getitem__(self, key):
-        return self.targets[key]
-
-    def keys(self):
-        return self.targets.keys()
-
-    def values(self):
-        return self.targets.values()
-
-    def items(self):
-        return self.targets.items()
-
-    def get(self, key, _default=None):
-        return self.targets.get(key, _default)
-
-
-class DelegateNamedMap(DelegateMap):
-    def add(self, target):
-        self.set_name(target)
-        super().add(target)
-
-    def set_name(self, target):
-        target.name = unique_name(
-            space=self.targets.keys(),
-            base=type(target).__name__.lower(),
-            name=self.get_id(target)
-        )
 
 
 class BaseLinker(object):
@@ -358,8 +343,8 @@ class One(BaseLinker):
         super()._unlink(obj, target)
 
 
-class BaseMany(BaseLinker):
-    many_class = None
+class Many(BaseLinker):
+    many_class = DelegateSet
 
     def __set__(self, obj, targets):
         self.__get__(obj).replace(targets)
@@ -394,19 +379,6 @@ class BaseMany(BaseLinker):
 
     def _del(self, obj, target):
         self.__get__(obj)._del(target)
-
-
-class Many(BaseMany):
-    many_class = DelegateSet
-
-
-class ManyMap(BaseMany):
-    many_class = DelegateMap
-
-
-class ManyNamed(BaseMany):
-    get_id = attrgetter('name')
-    many_class = DelegateNamedMap
 
 
 if __name__ == '__main__':
