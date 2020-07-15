@@ -377,7 +377,7 @@ class One(BaseLinker):
             else:
                 target = key(obj)
             id_ = get_id(target)
-            if id_ in _reg:
+            if id_ in _reg:  # already added to graph
                 target = _reg[id_]
             else:
                 _reg[id_] = target

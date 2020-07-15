@@ -4,21 +4,26 @@ _The easiest way to construct and use graphs in Python_
 
 ## Introduction
 
-Graphs and especially double-linked graphs (with relations going for- and backwards) are often useful, but easy to get wrong. After having written a number of tree and other graph libraries, usually as mixin classes, I found a different solution that has a number of advantages. Is consists of only 2 classes: `One` and `Many` and only a few optional parameters. With these classes you can create many types of graph, which in turn opens the way to a number of (included) algorithms associated with graphs and graph traversal.    
+Graphs are a powerful tool to handle software challenges. They are used in many software implementations, varying from file systems to web analysis tools, game engines to parsers and routers to state machines (not all implementation call them graphs, but they are). When you want to use a graph or extend the functionality of a graph, it requires a lot of relatively complex coding. But what if you could standardize the way graphs are built, with a standardized interface (still using you own names)? What if this standardisation can be used to implement standard re-usable algorithms, like shortest path, traversal and updates. Anygraph does this for you, and implements some of the standard algorithms associated with graphs (new algorithms will be added over time).    
+
+Graphs and especially double-linked graphs (with relations going for- and backwards) are easy to get wrong. After having written a number of tree and other graph libraries, usually as mixin classes, I found a different solution that has a number of advantages. Is consists of only 2 classes: `One` and `Many` and only a few optional parameters. With these classes you can create many types of graph, which in turn opens the way to a number of (included) algorithms associated with graphs and graph traversal.    
 
 Alternatives that I could find on github or PYPI did not meet my requirements, either being inflexible/more coupled (e.g. requiring inheritance), or missing easy-to-find documention.
 
-_Anygraph_ is a very easy-to-use library to add single and double sided relationships between objects. This can be used to construct trees, directed and non-directed graphs, cyclic and non-cyclic graphs.
+_Anygraph_ is a very easy-to-use library to add _single_ and _double sided_ relationships between objects. It can be used to build _trees_, _directed_ and _non-directed graphs_, _cyclic_ and _non-cyclic graphs_. It also supports mixing many-to-many, many-to-one and one-to-one relationships.
 
-_Anygraph_ also includes methods for:
+_Anygraph_ also includes methods/algorithms for:
+
 * Depth and breadth-first iteration,
 * _Building_ a graph from any relationship between objects, of the same or different classes,
 * Dijkstra and A* shortest path algorithms,
 * Applying a function to each connected node in the graph, possibly altering the graph, 
 * Traversing the graph with a key-function to select the next node,
 * Checking for cycles or if a node is reachable from another node,
-* Gathering all nodes in the graph, from forward and backward relationships,
+* Gathering all nodes or all nodes passing a filter in the graph, from forward and backward relationships,
 * Finding the endpoints of the graph, where progression is no longer possible.
+
+There are many more known algorithms related to graphs. If you miss the algorithm in this library, please let me know, or create it yourself on the top of the basic graph structure in this repo and make a pull-request.
 
 No inheritance is needed, a graph structure can simply be added to a class by setting one or two class attributes on your (possibly existing) class.
 
@@ -28,7 +33,7 @@ Anygraph can be installed using pip:
 
 `> pip install anygraph`
 
-Anygraph has _no dependencies_. It runs on Python 3.6 and higher.
+Anygraph has no dependencies. It runs on Python 3.6 and higher.
 
 ## Testing
 
@@ -105,7 +110,7 @@ node2.nexts.add(node1)  # raises ValueError
 ```
 When you create a link that would create a cycle in the graph, this will raise a `ValueError`. This will also prevent a cycle to be created through the reverse relationship. Note that a double-linked non-directed graph is always cyclic (I am a friend of my friend).
 
-To check whether a node is in a cycle, call `Node.nexts.in_cycle(some_node)`. To check whether there are any cycles in the graph reachable from a node, call `Node.nexts.is_cyclic(some_node)`. These can only be the case if `cyclic=True`: the default.
+To check whether some node is in a cycle, call `Node.nexts.in_cycle(some_node)`. To check whether there are any cycles in the graph reachable from a node, call `Node.nexts.is_cyclic(some_node)`. These can only be the case if `cyclic=True`: the default.
 
 ### Self-reference
 
@@ -120,20 +125,22 @@ node.nexts.add(node)  # raises ValueError
 This will also cause a `ValueError` to be raised when tried. Note that `cyclic=False` will also prevent self-reference.
 
 > These are the basics for creating a number of different types of graph. Creating graphs in this decoupled way, makes it 
->relatively easy to add functionality. Below are a number methods that can be applied to these graphs out-of-the-box 
->(most of which I have re-implemented a number of times in the past, because the graph logic was too tightly coupled 
->to the rest of the code). 
+>relatively easy to add functionality. Below are a number methods that can be applied to these graphs out-of-the-box. 
+
 
 ## Samples
 
 Below are code samples for the use of extra functionality that is currently included in _anygraph_. More examples can be found in the `demos` and `recipes` directories. 
 
+> Note that all methods below follow the same calling pattern: `Class.relationship_name.method_name(instance, *args, **kwargs)`, where usually the instance is the starting node in the graph. For example: `Parent.children.iterate(some_parent)`.
+
 These methods are implemented on both `One` and `many`:
 
-* `.iterate(start_obj, cyclic=False, breadth_first=False)`: iterate through the graph, depth- or breadth-first, allowing revisiting nodes or not,
 * `.build(start_obj, key='__iter__')`: build a graph using a key function that iterates over the next nodes to be inserted in the graph,
-* `.visit(start_obj, on_visit, cyclic=False, breadth_first=False)`: run through graph and apply on_visit to each node that is encountered,
-* `.shortest_path(start_obj, target_obj, get_cost=None, heuristic=None)`: returns the shortest path using A* or Dijkstra if a heuristic is missing,
+* `.iterate(start_obj, cyclic=False, breadth_first=False)`: iterate through the graph, depth- or breadth-first, allowing revisiting nodes or not,
+* `.find(start_obj, filter)`: run through the graph and gather and return a list of nodes for which `filter(obj)` returns `True`,
+* `.visit(start_obj, on_visit, cyclic=False, breadth_first=False)`: run through the graph and apply on_visit to each node that is encountered,
+* `.shortest_path(start_obj, target_obj, get_cost=None, heuristic=None)`: returns the shortest path using A*, or Dijkstra if a heuristic is missing,
 * `.walk(start_obj, key, on_visit=None)`: iterate over the graph using a key-function that returns the next node from `key(node)`,
 * `.endpoints(start_obj)`: iterate over the graph and gather the nodes that do not have a next node,
 * `.gather(start_obj)`: gather all nodes in the graph reachable from `start_obj` in a list, following the forward and reverse (if present) relationships.
