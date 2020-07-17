@@ -209,9 +209,6 @@ class BaseLinker(object):
             for forw_obj in forw_iterator.iter_object(obj):
                 if get_id(forw_obj) not in gathered:
                     queue.append(forw_obj)
-<<<<<<< Updated upstream
-                    
-=======
 
             if back_iterator:
                 for back_obj in back_iterator.iter_object(obj):
@@ -241,7 +238,6 @@ class BaseLinker(object):
                     pairs.add((obj, forw_obj))
                     queue.append(forw_obj)
 
->>>>>>> Stashed changes
             if back_iterator:
                 for back_obj in back_iterator.iter_object(obj):
                     if get_id(back_obj) not in gathered:
