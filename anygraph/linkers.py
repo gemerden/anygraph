@@ -209,13 +209,47 @@ class BaseLinker(object):
             for forw_obj in forw_iterator.iter_object(obj):
                 if get_id(forw_obj) not in gathered:
                     queue.append(forw_obj)
+<<<<<<< Updated upstream
                     
+=======
+
             if back_iterator:
                 for back_obj in back_iterator.iter_object(obj):
                     if get_id(back_obj) not in gathered:
                         queue.append(back_obj)
 
         return list(gathered.values())
+
+    def gather_pairs(self, start_obj):  # bit slow
+        """
+        Gather all connected pairs of nodes in a graph, going forward, and backward if reverse_name is defined.
+        """
+        get_id = self._get_id
+
+        forw_iterator = Iterator(self.name)
+        back_iterator = Iterator(self.reverse_name) if self.reverse_name else None
+
+        gathered = set()
+        queue = deque([start_obj])
+        pairs = set()
+
+        while len(queue):
+            obj = queue.popleft()
+
+            for forw_obj in forw_iterator.iter_object(obj):
+                if get_id(forw_obj) not in gathered:
+                    pairs.add((obj, forw_obj))
+                    queue.append(forw_obj)
+
+>>>>>>> Stashed changes
+            if back_iterator:
+                for back_obj in back_iterator.iter_object(obj):
+                    if get_id(back_obj) not in gathered:
+                        pairs.add((back_obj, obj))
+                        queue.append(back_obj)
+
+            gathered.add(get_id(obj))
+        return pairs
 
     def find(self, start_obj, filter):
         """ return objects that pass the filer callback """
