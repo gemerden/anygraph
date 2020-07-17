@@ -2,6 +2,7 @@ import unittest
 
 from anygraph import One, Many
 
+
 class TestLinkers(unittest.TestCase):
 
     def test_one(self):
@@ -111,7 +112,6 @@ class TestLinkers(unittest.TestCase):
         with self.assertRaises(ValueError):
             bob.nexts = [bob]
 
-
     def test_on_link(self):
         on_link_results = []
         on_unlink_results = []
@@ -170,7 +170,6 @@ class TestLinkers(unittest.TestCase):
         assert people == [bob, ann, pete, howy]
 
     def test_builder_many_by_name(self):
-
         class TestBuilder(object):
             nexts = Many()
 
@@ -203,7 +202,6 @@ class TestLinkers(unittest.TestCase):
         assert howy.nexts == {ann}
 
     def test_builder_many_by_func_cyclic(self):
-
         class TestBuilder(object):
             nexts = Many()
 
@@ -233,7 +231,6 @@ class TestLinkers(unittest.TestCase):
         assert TestBuilder.nexts.is_cyclic(bob)
 
     def test_builder_one(self):
-
         class TestBuilder(object):
             next = One()
 
@@ -468,8 +465,6 @@ class TestDoubleLinkers(unittest.TestCase):
         with self.assertRaises(ValueError):
             bob.prevs.include(howy)
 
-
-
     def test_on_link(self):
         on_link_results = []
         on_unlink_results = []
@@ -549,8 +544,6 @@ class TestDoubleLinkers(unittest.TestCase):
             def __str__(self):
                 return self.name
 
-
-
         bob = TestBuilder('bob')
         ann = TestBuilder('ann')
         pete = TestBuilder('pete')
@@ -586,8 +579,6 @@ class TestDoubleLinkers(unittest.TestCase):
 
             def __str__(self):
                 return self.name
-
-
 
         bob = TestBuilder('bob')
         ann = TestBuilder('ann')
@@ -640,6 +631,7 @@ class TestDoubleLinkers(unittest.TestCase):
         assert pip.prev == ann
 
     def test_gather(self):
+
         class Test(object):
             nexts = Many('prevs')
             prevs = Many('nexts')
@@ -663,8 +655,191 @@ class TestDoubleLinkers(unittest.TestCase):
 
         assert Test.nexts.gather(bob) == [bob, ann, pete, howy]
 
+    def test_gather_pairs_directed(self):
 
+        class Test(object):
+            nexts = Many('prevs')
+            prevs = Many('nexts')
 
+            def __init__(self, name):
+                self.name = name
 
+            def __repr__(self):
+                return self.name
 
+        nodes = [Test(str(i)) for i in range(5)]
+
+        for node in nodes:  # fully linked
+            node.nexts.include(*nodes)
+
+        assert len(nodes[0].nexts) == 5
+        assert len(nodes[0].prevs) == 5
+
+        nexts_pairs = Test.nexts.gather_pairs(nodes[0])
+        assert len(nexts_pairs) == 25
+
+        prevs_pairs = Test.prevs.gather_pairs(nodes[0])
+        assert len(prevs_pairs) == 25
+
+    def test_gather_pairs_non_directed(self):
+
+        class Test(object):
+            friends = Many('friends')
+
+            def __init__(self, name):
+                self.name = name
+
+            def __repr__(self):
+                return self.name
+
+        nodes = [Test(str(i)) for i in range(5)]
+
+        for node in nodes:  # fully linked
+            node.friends.include(*nodes)
+
+        assert len(nodes[0].friends) == 5
+
+        nexts_pairs = Test.friends.gather_pairs(nodes[0])
+        assert len(nexts_pairs) == 25
+
+    def test_find_directed(self):
+
+        class Test(object):
+            nexts = Many('prevs')
+            prevs = Many('nexts')
+
+            def __init__(self, name):
+                self.name = name
+
+            def __repr__(self):
+                return self.name
+
+        nodes = [Test(i) for i in range(5)]
+
+        for i, node1 in enumerate(nodes):
+            for j, node2 in enumerate(nodes):
+                if (i + j) % 2 == 1:
+                    node1.nexts.include(node2)
+
+        found = Test.nexts.find(nodes[0], filter=lambda n: n.name in (1, 2))
+        assert len(found) == 2
+
+    def test_find_non_directed(self):
+
+        class Test(object):
+            friends = Many('friends')
+
+            def __init__(self, name):
+                self.name = name
+
+            def __repr__(self):
+                return self.name
+
+        nodes = [Test(i) for i in range(5)]
+
+        for i, node1 in enumerate(nodes):
+            for j, node2 in enumerate(nodes):
+                if (i + j) % 2 == 1:
+                    node1.friends.include(node2)
+
+        found = Test.friends.find(nodes[0], filter=lambda n: n.name in (1, 2))
+        assert len(found) == 2
+
+    def test_reachable_directed(self):
+
+        class Test(object):
+            nexts = Many('prevs')
+            prevs = Many('nexts')
+
+            def __init__(self, name):
+                self.name = name
+
+            def __repr__(self):
+                return self.name
+
+        nodes = [Test(i) for i in range(5)]
+
+        for i, node1 in enumerate(nodes):
+            for j, node2 in enumerate(nodes):
+                if j == i+1:
+                    node1.nexts.include(node2)
+
+        reachable = Test.nexts.reachable(nodes[0], nodes[4])
+        assert reachable
+
+        reachable = Test.nexts.reachable(nodes[1], nodes[0])
+        assert not reachable
+
+    def test_reachable_non_directed(self):
+
+        class Test(object):
+            friends = Many('friends')
+
+            def __init__(self, name):
+                self.name = name
+
+            def __repr__(self):
+                return self.name
+
+        nodes = [Test(i) for i in range(5)]
+
+        for i, node1 in enumerate(nodes):
+            for j, node2 in enumerate(nodes):
+                if j == i+1:
+                    node1.friends.include(node2)
+
+        reachable = Test.friends.reachable(nodes[0], nodes[4])
+        assert reachable
+
+        reachable = Test.friends.reachable(nodes[1], nodes[0])
+        assert reachable
+
+    def test_walk_directed(self):
+
+        class Test(object):
+            nexts = Many('prevs')
+            prevs = Many('nexts')
+
+            def __init__(self, name):
+                self.name = name
+
+            def __repr__(self):
+                return self.name
+
+        nodes = [Test(i) for i in range(5)]
+
+        for i, node1 in enumerate(nodes):
+            for j, node2 in enumerate(nodes):
+                if j in (i+1, i+2):
+                    node1.nexts.include(node2)
+
+        visited = list(Test.nexts.walk(nodes[0], key=lambda n: n.nexts[0] if len(n.nexts) else None))
+        assert visited == nodes
+
+    def test_walk_non_directed(self):
+
+        class Test(object):
+            friends = Many('friends')
+
+            def __init__(self, name):
+                self.name = str(name)
+
+            def __repr__(self):
+                return self.name
+
+        nodes = [Test(i) for i in range(5)]
+
+        for i, node1 in enumerate(nodes):
+            for j, node2 in enumerate(nodes):
+                if j in (i+1, i+2):
+                    node1.friends.include(node2)
+
+        visited = []
+        for node in Test.friends.walk(nodes[0], key=lambda n: n.friends[0]):
+            visited.append(node)
+            if len(visited) == 5:
+                break
+
+        print(visited)
+        assert len(set(visited)) == 2
 
