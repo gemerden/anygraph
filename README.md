@@ -82,11 +82,11 @@ assert nodes[1].parent is nodes[0]
 assert nodes[2].parent is nodes[0]
 
 # let nodes[3] be a child of nodes[0] too
-nodes[3].parent = nodes[0]  # or 'nodes[0].children.add(nodes[3])' 
+nodes[3].parent = nodes[0]  # or 'nodes[0].children.include(nodes[3])' 
 assert nodes[3] in nodes[0].children
 
 # let nodes[3] be a child of nodes[1]
-nodes[1].children.add(nodes[3])
+nodes[1].children.include(nodes[3])
 assert nodes[3].parent is nodes[1]
 assert nodes[3] not in nodes[0].children
 ```
@@ -105,8 +105,8 @@ class Node(object):
     nexts = Many(cyclic=False)
 
 node1, node2 = Node(), Node()
-node1.nexts.add(node2)
-node2.nexts.add(node1)  # raises ValueError
+node1.nexts.include(node2)
+node2.nexts.include(node1)  # raises ValueError
 ```
 When you create a link that would create a cycle in the graph, this will raise a `ValueError`. This will also prevent a cycle to be created through the reverse relationship. Note that a double-linked non-directed graph is always cyclic (I am a friend of my friend).
 
@@ -120,7 +120,7 @@ class Node(object):
     nexts = Many(to_self=False)
 
 node = Node()
-node.nexts.add(node)  # raises ValueError
+node.nexts.include(node)  # raises ValueError
 ```
 This will also cause a `ValueError` to be raised when tried. Note that `cyclic=False` will also prevent self-reference.
 
@@ -161,7 +161,7 @@ class Person(object):
 
 bob = Person()
 ann = Person()
-ann.friends.add(bob)
+ann.friends.include(bob)
 # ... create a network of friends
 
 # iterate through the graph in depth first order
