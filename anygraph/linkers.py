@@ -313,6 +313,20 @@ class BaseLinker(object):
                                                  get_cost=get_cost,
                                                  heuristic=heuristic)
 
+    def minimum_spanning_tree(self, start_obj, iterator, get_cost):
+        """
+        Implementation of MST using Prim's algorithm. Note that of a bidirectionalgraph is used, it makes sense
+        to make the reverse relationship of type 'One', since the result is a tree.
+
+        :param start_obj: root of the tree
+        :param iterator: How to get from one node to the next nodes
+        :param get_cost: cost function func(from_node, to_node) indicating the cost of an edge between from_node and t-_node
+        :return: start_obj
+        """
+        return Iterator(self.name).minimum_spanning_tree(start_obj,
+                                                         iterator,
+                                                         get_cost)
+
     def _reverse(self, target):
         if self.reverse_name is None:
             return None

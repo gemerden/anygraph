@@ -161,6 +161,9 @@ class BaseIterator(object):
             obj_id = id_path[obj_id]
         return list(reversed(rev_path))
 
+    def minimum_spanning_tree(self, start_obj, iterator, get_cost):
+        tree_set = set() xxxxxxxxxxxxx
+
 
 class Iterator(BaseIterator):
     pass

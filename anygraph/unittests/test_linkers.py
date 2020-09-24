@@ -557,7 +557,47 @@ class TestDoubleLinkers(unittest.TestCase):
         assert bob.nexts == set()
         assert ann.prevs == set()
 
-        TestBuilder.nexts.build(bob)
+        TestBuilder.nexts.build(bob )
+
+        assert bob.nexts == {ann, pete}
+        assert ann.prevs == {bob, howy}
+        assert howy.nexts == {ann}
+        assert howy.prevs == {pete}
+
+    def test_builder_many_by_name_2(self):
+
+        class TestBuilder(object):
+            nexts = Many('prevs')
+            prevs = Many('nexts')
+
+            def __init__(self, name, iterable=()):
+                self.name = name
+                self.items = list(iterable)
+
+            def extend(self, *items):
+                self.items.extend(items)
+
+            def __iter__(self):
+                for item in self.items:
+                    yield item
+
+            def __str__(self):
+                return self.name
+
+        bob = TestBuilder('bob')
+        ann = TestBuilder('ann')
+        pete = TestBuilder('pete')
+        howy = TestBuilder('howy')
+
+        bob.extend(ann, pete)
+        pete.extend(howy, bob)
+        ann.extend(pete)
+        howy.extend(ann)
+
+        assert bob.nexts == set()
+        assert ann.prevs == set()
+
+        TestBuilder.nexts.build(bob, key=lambda o: o.items)
 
         assert bob.nexts == {ann, pete}
         assert ann.prevs == {bob, howy}
