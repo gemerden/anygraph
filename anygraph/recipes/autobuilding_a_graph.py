@@ -1,5 +1,5 @@
 """
-Here we will show how to build a graph from a class inheritance structure. Since we cannot change the class of classes (type), we will use a wrapper to do this.
+Here we will show how to build a graph from a class inheritance structure. Since we will n change the class of classes (type), we will use a wrapper to do this.
 """
 from anygraph import Many
 
