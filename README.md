@@ -4,11 +4,11 @@ _The easiest way to construct and use graphs in Python_
 
 ## Introduction
 
-Graphs are a powerful tool to handle software challenges. They are used in many software implementations, varying from file systems to web analysis tools, game engines to parsers and routers to state machines (not all implementation call them graphs, but they are). When you want to use a graph or extend the functionality of a graph, it requires a lot of relatively complex coding. But what if you could standardize the way graphs are built, with a standardized interface (still using you own names)? What if this standardisation can be used to implement standard re-usable algorithms, like shortest path, traversal and updates. Anygraph does this for you, and implements some of the standard algorithms associated with graphs (new algorithms will be added over time).    
+Graphs are a powerful tool to handle software challenges. They are used in many software implementations, varying from file systems to web analysis tools, game engines to parsers and routers to state machines (not all implementation call them graphs, but they are). When you want to use a graph or extend the functionality of a graph, it requires a lot of relatively complex coding. But what if you could standardize the way graphs are built, with a standardized interface (still using you own names)? What if this standardization can be used to implement standard re-usable algorithms, like shortest path, traversal and updates. Anygraph does this for you, and implements some of the standard algorithms associated with graphs (new algorithms will be added over time).    
 
 Graphs and especially double-linked graphs (with relations going for- and backwards) are easy to get wrong. After having written a number of tree and other graph libraries, usually as mixin classes, I found a different solution that has a number of advantages. Is consists of only 2 classes: `One` and `Many` and only a few optional parameters. With these classes you can create many types of graph, which in turn opens the way to a number of (included) algorithms associated with graphs and graph traversal.    
 
-Alternatives that I could find on github or PYPI did not meet my requirements, either being inflexible/more coupled (e.g. requiring inheritance), or missing easy-to-find documention.
+Alternatives that I could find on GitHub or PYPI did not meet my requirements, either being inflexible/more coupled (e.g. requiring inheritance), or missing easy-to-find documentation.
 
 _Anygraph_ is a very easy-to-use library to add _single_ and _double sided_ relationships between objects. It can be used to build _trees_, _directed_ and _non-directed graphs_, _cyclic_ and _non-cyclic graphs_. It also supports mixing many-to-many, many-to-one and one-to-one relationships.
 
@@ -37,7 +37,7 @@ Anygraph has no dependencies. It runs on Python 3.6 and higher.
 
 ## Testing
 
-Unittests can be found in `anygraph/unittests`
+Unit tests can be found in `anygraph/unittests`
 
 ## The Basics
 
@@ -132,7 +132,7 @@ This will also cause a `ValueError` to be raised when tried. Note that `cyclic=F
 
 Below are code samples for the use of extra functionality that is currently included in _anygraph_. More examples can be found in the `demos` and `recipes` directories. 
 
-> Note that all methods below follow the same calling pattern: `Class.relationship_name.method_name(instance, *args, **kwargs)`, where usually the instance is the starting node in the graph. For example: `Parent.children.iterate(some_parent)`.
+> Note that all methods below follow the same calling pattern: `Class.relationship_name.method_name(instance, *args, **kwargs)`, where usually the instance is the starting node in the graph, e.g.: `Parent.children.iterate(some_parent)`. See *'Installing a Graph'* below for an alternative way of calling these methods.
 
 These methods are implemented on both `One` and `many`:
 
@@ -143,14 +143,36 @@ These methods are implemented on both `One` and `many`:
 * `.shortest_path(start_obj, target_obj, get_cost=None, heuristic=None)`: returns the shortest path using A*, or Dijkstra if a heuristic is missing,
 * `.walk(start_obj, key, on_visit=None)`: iterate over the graph using a key-function that returns the next node from `key(node)`,
 * `.endpoints(start_obj)`: iterate over the graph and gather the nodes that do not have a next node,
-* `.gather(start_obj)`: gather all nodes in the graph reachable from `start_obj` in a list, following the forward and reverse (if present) relationships.
+* `.gather(start_obj)`: gather all nodes in the graph reachable from `start_obj` in a list, following the forward and reverse (if present) edges.
 
-At the bottom of the charter there are some more samples:
+At the bottom of the chapter there are some more samples:
 
 * Creating a graph that consists of nodes of different classes, mixing both `One` and `Many`,
 * Using `on_link(...)` and `on_unlink(...)` callbacks to add do extra logic when nodes are linked or unlinked.
 
 Note that all these methods are called as e.g. `Person.friends.some_method(start_obj, ...)`; on the `Person` class, not on an instance of `Person`. This is inherent to the use of descriptors. 
+
+### Installing a Graph
+
+In many examples below, you see calls like `Person.friends.iterate(person_instance, ...)`. This might seem a bit too complicated for general use (there is a reason though, see below). To be able to make the calls simpler and more intuitive you can install a graph attribute:
+
+```python
+class Person(object):
+    friends = Many('friends', install=True)  # 'install' works for all types of graph
+        
+bob = Person()
+ann = Person()
+bob.friends = [ann]
+
+# now you can (e.g.):
+assert list(bob.iterate()) ==  [bob, ann]	 # instead of Person.friends.iterate(bob)
+assert bob.shortest_path(ann) == [bob, ann]  # instead of Person.friends.shortest_path(bob, ann)
+assert bob.in_cycle()						 # instead of Person.friends.in_cycle(bob)
+```
+
+This works for all methods on the graphs described in this readme.
+
+*Note*: The reason the graph is not installed by default is that if there are multiple graph attributes, it is unclear which graph should be used in the methods installed (should `.iterate()` follow the parent or the children nodes?). This means you can only install one graph on a class. If you try to install more, a `ValueError` is raised.
 
 ### Graph Iteration
 
@@ -246,13 +268,13 @@ Again the iteration order and allowing cycles in the iteration can be modified w
 
 ### Shortest Path
 
-Often a shortest path between to nodes in a graph must be found (e.g. in route-planners or in games). _Anygraph_ provides two algorithms to calculate shortest path.Let's say we have a graph consisting of nodes that have already been connected and we want the shortest route between the first and last node (or between any other nodes):
+Often a shortest path between to nodes in a graph must be found (e.g. in route-planners or in games). _Anygraph_ provides two algorithms to calculate shortest path. Let's say we have a graph consisting of nodes that have already been connected and we want the shortest route between the first and last node (or between any other nodes):
 ```python
 class Node(object):
     nexts = Many('prevs')
     prevs = Many('nexts')
 
-nodes = create_and_connect_nodes()
+nodes = create_and_connect_nodes()  # some graph is constructed
 
 # we need a cost function to be able to define shortest. The function below minimizes the number of edges in the path.
 def cost(node1, node2):
@@ -270,7 +292,7 @@ def heuristic(node1, node2):
 #shortest path but faster
 path = Node.nexts.shortest_path(nodes[0], nodes[-1], get_cost=cost, heuristic=heuristic)
 ```
-With a heuristic function, the A* algorithm is used; without, the method falls back to Dijkstra. A lower estimate means that the estimate is always smaller or equal than the real cost. In geographic pathfinding the heuristic is often the distance or traveltime to the endpoint without obstructions. 
+With a heuristic function, the A* algorithm is used; without, the method falls back to Dijkstra. A lower estimate means that the estimate is always smaller or equal than the real cost. In geographic pathfinding the heuristic is often the straight line (euclidic) distance or travel-time to the endpoint. 
 
 A more in-depth example can be found in `anygraph\recipes\shortest_path_in_grid.py`
 
@@ -340,7 +362,7 @@ etc.
 
 ### Callbacks
 
-The `One` and `Many` classes support 2 callbacks: `on_link(obj, linked_obj)` and `on_unlink(obj, linked_obj)`. For example in the mixed node example above, you might want to prevent dangling Edge objects (only linked on one side). This can be achieved by using `on_unlink`, as in:
+The `One` and `Many` classes support 2 callbacks: `on_link(obj, linked_obj)` and `on_unlink(obj, linked_obj)`. For example in the mixed node example above, you might want to prevent dangling Edge objects (only linked on one side). This can be achieved by using `on_unlink`:
 ```python
 def on_next_unlink(obj, linked_obj):
     del obj.prevs
@@ -352,6 +374,29 @@ class Edge(object):  # an edge only connects to one node on each end
     nexts = One('prevs', on_unlink=on_next_unlink)
     prevs = One('nexts', on_unlink=on_prev_unlink)
 ```
+
+### Creating an Image
+
+Graphs can now be visualized in an image file of different formats: 
+
+```python
+class Person(object):
+    friends = Many('friends', install=True)
+    
+	def __init__(self, name):
+        self.name = name
+
+people = create_and_connect_people()
+Person.friends.save_graph_image(people[0], 'friends.png', label_getter=lambda obj: obj.name, view=True)
+# or
+people[0].save_graph_image('friends.png', label_getter=lambda obj: obj.name, view=True) # because the friends 
+```
+
+* The first argument (in this case `people[0]`) is the entry point of the graph to be drawn,
+* The second (`friends.png`) is the filename the image will be saved to; the extension determines the format,
+* `label_getter` is a function that gets the label from the node, it must return the text to be shown in the nodes,
+* `view` indicates whether the file should be opened after generation in the registered program for the file name extension,
+* `graphviz` is used and must be installed (see  [graphviz](https://graphviz.readthedocs.io/en/stable/manual.html)). More info on file formats, etc. can be found there as well.
 
 ## Authors
 
