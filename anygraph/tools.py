@@ -48,19 +48,29 @@ def bind_builtin_to_instance(obj, **builtin_funcs):
         setattr(obj, name, MethodType(func, obj))
 
 
-class Heap(list):
-    append = None
-    insert = None
-    extend = None
-    __setitem__ = None
-    __delitem__ = None
+def save_graph_image(name, pairs, directed=True, filename='png', view=True, **options):
+    try:
+        import graphviz
+    except Exception as error:
+        raise RuntimeError(f"graphviz cannot be imported to save graph image: {error}")
 
-    bind = bind_builtin_to_instance
+    file_parts = filename.rsplit('.', 1)
+    if len(file_parts) == 1:  # just an extension
+        filename = name
+    else:
+        filename = file_parts[0]
 
-    def __init__(self, iterable=()):
-        self.bind(pop=heappop,
-                  push=heappush,
-                  pushpop=heappushpop,
-                  replace=heapreplace)
-        super().__init__(iterable)
-        heapify(self)
+    if directed:
+        dot = graphviz.Digraph(comment=name,
+                               format=file_parts[-1],
+                               node_attr=options)
+    else:
+        dot = graphviz.Graph(comment=name,
+                             format=file_parts[-1],
+                             node_attr=options)
+
+    for label1, label2 in pairs:
+        dot.edge(label1, label2)
+
+    dot.render(filename, view=view)
+    return dot

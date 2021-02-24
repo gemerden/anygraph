@@ -1,7 +1,8 @@
 from collections import deque
 from collections.abc import Set, Mapping
+from functools import partial, wraps
 
-from anygraph.tools import unique_name
+from anygraph.tools import unique_name, save_graph_image
 from anygraph.visitors import Iterator, Visitor
 
 
@@ -101,7 +102,7 @@ class DelegateMap(BaseDelegate, Mapping):
             old_key = self.find_key(old_key_or_target)
         keys = list(self.targets)
         index = keys.index(old_key)
-        below = {k: self.targets.pop(k) for k in keys[index+1:]}
+        below = {k: self.targets.pop(k) for k in keys[index + 1:]}
         self.targets[new_key] = self.targets.pop(old_key)
         self.targets.update(below)
 
@@ -127,14 +128,16 @@ class DelegateMap(BaseDelegate, Mapping):
         return repr(self.targets)
 
 
-
 class BaseLinker(object):
     """
     Baseclass for One and Many descriptors, with shared functionality.
     """
     get_id = id  # default
 
-    def __init__(self, reverse_name=None, cyclic=True, to_self=True, on_link=None, on_unlink=None, get_id=None):
+    _installables = ('iterate', 'visit', 'build', 'gather', 'gather_pairs', 'find', 'reachable', 'walk',
+                     'endpoints', 'is_cyclic', 'in_cycle', 'shortest_path', 'save_graph_image')
+
+    def __init__(self, reverse_name=None, cyclic=True, to_self=True, on_link=None, on_unlink=None, install=False, get_id=None):
         """
         :param reverse_name: optional name of the reverse relationship
         :param cyclic: whether the graph is allowed to be cyclic
@@ -148,11 +151,39 @@ class BaseLinker(object):
         self.to_self = to_self
         self._do_on_link = on_link
         self._do_on_unlink = on_unlink
+        self._install = install
         self._get_id = get_id or self.get_id
         self.name = None
 
+    @property
+    def is_directed(self):
+        return self.name != self.reverse_name
+
+    @property
+    def installables(self):
+        if self._install:
+            if isinstance(self._install, (tuple, list)):
+                return self._install
+            else:
+                return self._installables
+        return None
+
     def __set_name__(self, cls, name):
         self.name = name  # sets the name of the attribute when the interpreter first encounters the descriptor in a class
+        if self.installables:
+            if getattr(cls, '_installed_graph', False):  # there can be only one graph installed
+                raise ValueError(f"cannot install graph '{name}', other graph '{cls._installed_graph.name}' already installed")
+            cls._installed_graph = self
+
+            # add methods of this class to the class with the graph attribute
+            for installable in self.installables:
+                installable_func = getattr(self, installable)
+
+                @wraps(installable_func)
+                def installed_func(this, *args, __func=installable_func, **kwargs):
+                    return __func(this, *args, **kwargs)
+
+                setattr(cls, installable, installed_func)
 
     def __get__(self, obj, cls=None):
         if obj is None:
@@ -228,23 +259,25 @@ class BaseLinker(object):
 
         gathered = set()
         queue = deque([start_obj])
-        pairs = set()
+        pairs = []
 
         while len(queue):
             obj = queue.popleft()
 
             for forw_obj in forw_iterator.iter_object(obj):
-                if get_id(forw_obj) not in gathered:
-                    pairs.add((obj, forw_obj))
+                key = (get_id(obj), get_id(forw_obj))
+                if key not in gathered:
+                    pairs.append((obj, forw_obj))
                     queue.append(forw_obj)
+                gathered.add(key)
 
             if back_iterator:
                 for back_obj in back_iterator.iter_object(obj):
-                    if get_id(back_obj) not in gathered:
-                        pairs.add((back_obj, obj))
+                    key = (get_id(back_obj), get_id(obj))
+                    if key not in gathered:
+                        pairs.append((back_obj, obj))
                         queue.append(back_obj)
-
-            gathered.add(get_id(obj))
+                    gathered.add(key)
         return pairs
 
     def find(self, start_obj, filter):
@@ -312,6 +345,25 @@ class BaseLinker(object):
         return Iterator(self.name).shortest_path(start_obj, target_obj,
                                                  get_cost=get_cost,
                                                  heuristic=heuristic)
+
+    def save_graph_image(self, start_obj, filename, label_getter=lambda obj: obj.name,
+                         view=False, fontsize='10', fontname='Arial bold', **options):
+
+        if self.is_directed:
+            label_pairs = {(label_getter(n1), label_getter(n2))
+                           for n1, n2 in self.gather_pairs(start_obj)}
+        else:
+            label_pairs = {tuple(sorted((label_getter(n1), label_getter(n2))))
+                           for n1, n2 in self.gather_pairs(start_obj)}
+
+        save_graph_image(name=self.name,
+                         pairs=label_pairs,
+                         directed=self.is_directed,
+                         view=view,
+                         filename=filename,
+                         fontsize=fontsize,
+                         fontname=fontname,
+                         **options)
 
     def _reverse(self, target):
         if self.reverse_name is None:
@@ -412,6 +464,7 @@ class One(BaseLinker):
             else:
                 _reg[id_] = target
             setattr(obj, self.name, target)
+
         return visit
 
     def _init(self, obj):
@@ -487,7 +540,6 @@ class ManyMap(BaseMany):
 
     def _existing(self, obj, target):
         return target in self.__get__(obj).values()
-
 
 
 if __name__ == '__main__':
