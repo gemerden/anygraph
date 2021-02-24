@@ -1,4 +1,5 @@
 import unittest
+from random import choice
 
 from anygraph import One, Many
 
@@ -761,7 +762,7 @@ class TestDoubleLinkers(unittest.TestCase):
 
         for i, node1 in enumerate(nodes):
             for j, node2 in enumerate(nodes):
-                if j == i+1:
+                if j == i + 1:
                     node1.nexts.include(node2)
 
         reachable = Test.nexts.reachable(nodes[0], nodes[4])
@@ -785,7 +786,7 @@ class TestDoubleLinkers(unittest.TestCase):
 
         for i, node1 in enumerate(nodes):
             for j, node2 in enumerate(nodes):
-                if j == i+1:
+                if j == i + 1:
                     node1.friends.include(node2)
 
         reachable = Test.friends.reachable(nodes[0], nodes[4])
@@ -810,7 +811,7 @@ class TestDoubleLinkers(unittest.TestCase):
 
         for i, node1 in enumerate(nodes):
             for j, node2 in enumerate(nodes):
-                if j in (i+1, i+2):
+                if j in (i + 1, i + 2):
                     node1.nexts.include(node2)
 
         visited = list(Test.nexts.walk(nodes[0], key=lambda n: n.nexts[0] if len(n.nexts) else None))
@@ -831,7 +832,7 @@ class TestDoubleLinkers(unittest.TestCase):
 
         for i, node1 in enumerate(nodes):
             for j, node2 in enumerate(nodes):
-                if j in (i+1, i+2):
+                if j in (i + 1, i + 2):
                     node1.friends.include(node2)
 
         visited = []
@@ -842,4 +843,117 @@ class TestDoubleLinkers(unittest.TestCase):
 
         print(visited)
         assert len(set(visited)) == 2
+
+    def test_install_one(self):
+        class TestMany(object):
+            one = One('one', install=True)
+
+            def __init__(self, name):
+                self.name = name
+
+        bob = TestMany('bob')
+        ann = TestMany('ann')
+
+        bob.one = ann
+
+        assert ann.one is bob
+        assert bob.one is ann
+
+        assert bob.iterate.__name__ == 'iterate'
+        assert list(bob.iterate()) == [bob, ann]
+
+        assert bob.shortest_path.__name__ == 'shortest_path'
+        assert bob.shortest_path(ann) == [bob, ann]
+        assert bob.in_cycle()
+
+    def test_install_many(self):
+        class TestMany(object):
+            nexts = Many(install=True)
+
+            def __init__(self, name):
+                self.name = name
+
+        bob = TestMany('bob')
+        ann = TestMany('ann')
+
+        bob.nexts.include(ann)
+        ann.nexts.include(bob)
+
+        assert ann in bob.nexts
+        assert bob in ann.nexts
+
+        assert bob.iterate.__name__ == 'iterate'
+        assert list(bob.iterate()) == [bob, ann]
+
+        assert bob.shortest_path.__name__ == 'shortest_path'
+        assert bob.shortest_path(ann) == [bob, ann]
+        assert bob.in_cycle()
+
+    def test_install_non_directed(self):
+
+        class Friend(object):
+            friends = Many('friends', install=True)
+
+            def __init__(self, name):
+                self.name = name
+
+        bob = Friend('bob')
+        ann = Friend('ann')
+
+        bob.friends.include(ann)
+
+        assert ann in bob.friends
+        assert bob in ann.friends
+
+        assert bob.iterate.__name__ == 'iterate'
+        assert list(bob.iterate()) == [bob, ann]
+
+        assert bob.shortest_path.__name__ == 'shortest_path'
+        assert ann.shortest_path(bob) == [ann, bob]
+        assert bob.in_cycle()
+
+    def test_directed_image(self):
+        names = ('ann', 'bob', 'fred', 'betty', 'eric', 'charley', 'claudia', 'lars', 'jan')
+
+        class Object(object):
+            nexts = Many(install=True)
+
+            def __init__(self, key):
+                self.key = key
+
+        nodes = [Object(name) for name in names]
+
+        for _ in range(20):
+            choice(nodes).nexts.include(choice(nodes))
+
+        try:
+            nodes[0].save_graph_image('/data/nexts.png', label_getter=lambda obj: obj.key, view=True)
+        except RuntimeError as error:  # graphviz not installed
+            print(error)
+
+    def test_undirected_image(self):
+
+        names = ('ann', 'bob', 'fred', 'betty', 'eric', 'charley', 'claudia', 'lars', 'jan', 'imogen')  # len() == 10
+
+        class Person(object):
+            friends = Many('friends', install=True)
+
+            def __init__(self, name):
+                self.name = name
+
+        nodes = [Person(name) for name in names]
+
+        for _ in range((len(names)*len(names))//3):
+            person1 = choice(nodes)
+            person2 = choice(nodes)
+            if person1 is not person2:
+                person1.friends.include(person2)
+
+        try:
+            nodes[0].save_graph_image('/data/friends.png', label_getter=lambda obj: obj.name, view=True)
+        except RuntimeError as error:  # graphviz not installed
+            print(error)
+
+
+
 
