@@ -986,3 +986,23 @@ class TestDoubleLinkers(unittest.TestCase):
             nodes[0].save_image('/data/friends.png', label_getter=lambda obj: obj.name, view=False)
         except RuntimeError as error:  # graphviz not installed
             print(error)
+
+    def test_example(self):
+        class Person(object):  # a non-directed graph
+            friends = Many('friends')
+
+        bob = Person()
+        ann = Person()
+        jim = Person()
+        jan = Person()
+
+        # let's make some friends
+        bob.friends = [ann, jim]
+
+        # check whether ther reverse relation is present
+        assert bob in ann.friends and bob in jim.friends
+
+        # let's include make jan a friend
+        jan.friends.include(ann)
+
+        assert ann.friends == {bob, jan}

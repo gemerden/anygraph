@@ -70,27 +70,23 @@ class Link(object): # or a  double-linked chain of objects
 ```
 This also means that you can easily add a graph structure to existing objects, just by adding a class attribute. Note that any names can be used, names like 'parent' are used for clarity.
 
-The next step is to actually construct a graph; linking the nodes together. Let's take the tree graph as an example, since it uses both `One` and `Many`, double-linked:
+The next step is to actually construct a graph; linking the nodes together. Let's take the Person class as an example:
 ```python
-nodes = [TreeNode() for _ in range(4)]
+bob = Person()
+ann = Person()
+jim = Person()
+jan = Person()
 
-# lets give nodes[0] some children
-nodes[0].children = [nodes[1], nodes[2]]  # or nodes[0].update([nodes[1], nodes[2]])
+bob.friends = [ann, jim]  # let's make some friends
+assert bob in ann.friends and bob in jim.friends  # check the reverse relation
 
-# check whether nodes[1] and nodes[2] have the right parent
-assert nodes[1].parent is nodes[0]
-assert nodes[2].parent is nodes[0]
+jan.friends.include(ann)  # let's give 'jan' a friend
+assert ann.friends == {bob, jan}  # so 'ann' has 2 friends now
 
-# let nodes[3] be a child of nodes[0] too
-nodes[3].parent = nodes[0]  # or 'nodes[0].children.include(nodes[3])' 
-assert nodes[3] in nodes[0].children
-
-# let nodes[3] be a child of nodes[1]
-nodes[1].children.include(nodes[3])
-assert nodes[3].parent is nodes[1]
-assert nodes[3] not in nodes[0].children
+ann.friends.exclude(jan)  # it did't work out
+assert ann.friends == {bob}
 ```
-In short: changes to a `One` or `Many` double linked relationship will always **update the reverse relationships** and break existing relationships when needed.
+In short: changes to a `Many` (and `One`) double linked relationship will always **update the reverse relationships** and break existing relationships when needed.
 
 * A `One` relationship supports the normal attribute operations: `n.parent = child`, `del n.parent`, `n.parent = None` (same as `del`)
 * A `Many` relationship supports the same methods and operations as the immutable abc.Set + `.include(*nexts), .exlude(*nexts), clear()` and assignment of an iterable  (e.g. `node.children = [child1, child2]`) and deletion (e.g. `del node.children`).  
@@ -115,9 +111,9 @@ assert bob.shortest_path(ann) == [bob, ann]  # instead of Person.friends.shortes
 assert bob.in_cycle()						 # instead of Person.friends.in_cycle(bob)
 ```
 
-This works for all methods on the graphs described in this readme.
+This works for all methods on the graphs described in this readme. You do not have to install any graph attribute.
 
-*Note*: The reason the graph is not installed by default is that if there are multiple graph attributes, it is unclear which graph should be used in the methods installed (should `.iterate()` follow the parent or the children nodes?). This means you can only install one graph on a class. If you try to install more, a `ValueError` is raised.
+*Note*: The reason the graph is not installed by default is that if there are multiple graph attributes, it is unclear which graph should be used in the methods installed (should `.iterate()` follow the parent or the children edges?). This means you can only install one `Many` or `One` on a class. If you try to install more, a `ValueError` is raised.
 
 ### Cycles in Graphs
 
@@ -132,7 +128,7 @@ node2.nexts.include(node1)  # raises ValueError
 ```
 When you create a link that would create a cycle in the graph, this will raise a `ValueError`. This will also prevent a cycle to be created through the reverse relationship. Note that a double-linked non-directed graph is always cyclic (I am a friend of my friend).
 
-To check whether some node is in a cycle, call `Node.nexts.in_cycle(some_node)`. To check whether there are any cycles in the graph reachable from a node, call `Node.nexts.is_cyclic(some_node)`. These can only be the case if `cyclic=True`: the default.
+To check whether some node is in a cycle, call `Node.nexts.in_cycle(some_node)` or `some_node.in_cycle()` if `nexts` is installed. To check whether there are any cycles in the graph reachable from a node, call `Node.nexts.is_cyclic(some_node)`. These can only be the case if `cyclic=True`: the default.
 
 ### Self-reference
 
@@ -159,10 +155,10 @@ Below are code samples for the use of extra functionality that is currently incl
 These methods are implemented on both `One` and `many`:
 
 * `.build(start_obj, key='__iter__')`: build a graph using a key function that iterates over the next nodes to be inserted in the graph,
-* `.iterate(start_obj, cyclic=False, breadth_first=False)`: iterate through the graph, depth- or breadth-first, allowing revisiting nodes or not,
-* `.find(start_obj, filter)`: run through the graph and gather and return a list of nodes for which `filter(obj)` returns `True`,
+* `.iterate(start_obj, cyclic=False, breadth_first=False)`: iterate through the graph, depth- or breadth-first, allowing revisiting nodes or not with `cyclic`,
+* `.find(start_obj, filter)`: run through the graph and gather and return a list of nodes for which `filter(node)` returns `True`,
 * `.visit(start_obj, on_visit, cyclic=False, breadth_first=False)`: run through the graph and apply on_visit to each node that is encountered,
-* `.shortest_path(start_obj, target_obj, get_cost=None, heuristic=None)`: returns the shortest path using A*, or Dijkstra if a heuristic is missing,
+* `.shortest_path(start_obj, target_obj, get_cost=None, heuristic=None)`: returns the shortest path using A*, or Dijkstra if a `heuristic` is `None`. if `get_cost` is `None`, the default counts the edges to get to another node as cost, 
 * `.walk(start_obj, key, on_visit=None)`: iterate over the graph using a key-function that returns the next node from `key(node)`,
 * `.endpoints(start_obj)`: iterate over the graph and gather the nodes that do not have a next node,
 * `.gather(start_obj)`: gather all nodes in the graph reachable from `start_obj` in a list, following the forward and reverse (if present) edges.
@@ -170,9 +166,10 @@ These methods are implemented on both `One` and `many`:
 At the bottom of the chapter there are some more samples:
 
 * Creating a graph that consists of nodes of different classes, mixing both `One` and `Many`,
-* Using `on_link(...)` and `on_unlink(...)` callbacks to add do extra logic when nodes are linked or unlinked.
+* Using `on_link(...)` and `on_unlink(...)` callbacks to add do extra logic when nodes are linked or unlinked,
+* Using `save_image` to create and save an image of a graph.
 
-Note that all these methods are called as e.g. `Person.friends.some_method(start_obj, ...)`; on the `Person` class, not on an instance of `Person`. This is inherent to the use of descriptors. 
+Note that all these methods can be called as e.g. `Person.friends.some_method(start_obj, ...)`; on the `Person` class; to call the methods in the instance, see '*Installing a Graph*' above. 
 
 ### Graph Iteration
 
