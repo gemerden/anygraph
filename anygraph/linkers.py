@@ -135,7 +135,7 @@ class BaseLinker(object):
     get_id = id  # default
 
     _installables = ('iterate', 'visit', 'build', 'gather', 'gather_pairs', 'find', 'reachable', 'walk',
-                     'endpoints', 'is_cyclic', 'in_cycle', 'shortest_path', 'save_graph_image')
+                     'endpoints', 'is_cyclic', 'in_cycle', 'shortest_path', 'save_image')
 
     def __init__(self, reverse_name=None, cyclic=True, to_self=True, on_link=None, on_unlink=None, install=False, get_id=None):
         """
@@ -346,8 +346,8 @@ class BaseLinker(object):
                                                  get_cost=get_cost,
                                                  heuristic=heuristic)
 
-    def save_graph_image(self, start_obj, filename, label_getter=lambda obj: obj.name,
-                         view=False, fontsize='10', fontname='Arial bold', **options):
+    def save_image(self, start_obj, filename, label_getter=lambda obj: obj.name,
+                   view=False, fontsize='10', fontname='Arial bold', **options):
 
         if self.is_directed:
             label_pairs = {(label_getter(n1), label_getter(n2))
@@ -493,18 +493,19 @@ class BaseMany(BaseLinker):
         self.__get__(obj).clear()
 
     def _build_on_visit(self, key, _reg):
+        name = self.name
         get_id = self._get_id
 
         def visit(obj, key=key):
             if isinstance(key, str):
                 key = getattr(obj.__class__, key)
             for target in key(obj):
-                ident = get_id(target)
-                if ident in _reg:
-                    target = _reg[ident]
+                id_ = get_id(target)
+                if id_ in _reg:
+                    target = _reg[id_]
                 else:
-                    _reg[ident] = target
-                getattr(obj, self.name).include(target)
+                    _reg[id_] = target
+                getattr(obj, name).include(target)
 
         return visit
 

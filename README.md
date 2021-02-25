@@ -377,19 +377,21 @@ class Edge(object):  # an edge only connects to one node on each end
 
 ### Creating an Image
 
-Graphs can now be visualized in an image file of different formats: 
+Graphs can now be visualized in an image file of different formats:
 
 ```python
 class Person(object):
     friends = Many('friends', install=True)
-    
-	def __init__(self, name):
+
+    def __init__(self, name):
+
         self.name = name
 
+
 people = create_and_connect_people()
-Person.friends.save_graph_image(people[0], 'friends.png', label_getter=lambda obj: obj.name, view=True)
+Person.friends.save_image(people[0], 'friends.png', label_getter=lambda obj: obj.name, view=True)
 # or
-people[0].save_graph_image('friends.png', label_getter=lambda obj: obj.name, view=True) # because the friends 
+people[0].save_image('friends.png', label_getter=lambda obj: obj.name, view=True)  # because the friends 
 ```
 
 * The first argument (in this case `people[0]`) is the entry point of the graph to be drawn,
