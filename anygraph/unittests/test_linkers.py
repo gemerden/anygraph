@@ -927,7 +927,7 @@ class TestDoubleLinkers(unittest.TestCase):
             choice(nodes).nexts.include(choice(nodes))
 
         try:
-            nodes[0].save_graph_image('/data/nexts.png', label_getter=lambda obj: obj.key, view=True)
+            nodes[0].save_graph_image('/data/nexts.png', label_getter=lambda obj: obj.key, view=False)
         except RuntimeError as error:  # graphviz not installed
             print(error)
 
@@ -950,7 +950,7 @@ class TestDoubleLinkers(unittest.TestCase):
                 person1.friends.include(person2)
 
         try:
-            nodes[0].save_graph_image('/data/friends.png', label_getter=lambda obj: obj.name, view=True)
+            nodes[0].save_graph_image('/data/friends.png', label_getter=lambda obj: obj.name, view=False)
         except RuntimeError as error:  # graphviz not installed
             print(error)
 
