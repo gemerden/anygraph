@@ -36,11 +36,6 @@ class BaseDelegate(object):
         """ removes all targets """
         self.exclude(*self.targets.values())
 
-    def one(self):
-        """ return a target (e.g. as entry point to the graph """
-        for target in self.targets.values():
-            return target
-
     def _set(self, target):
         raise NotImplementedError
 
@@ -111,7 +106,6 @@ class DelegateMap(BaseDelegate, Mapping):
         for key, targ in self.targets.items():
             if target is targ:
                 return key
-        return None
 
     def _set(self, target):
         self.targets[self.get_key(self.owner, target)] = target
@@ -350,10 +344,10 @@ class BaseLinker(object):
                    view=False, fontsize='10', fontname='Arial bold', **options):
 
         if self.is_directed:
-            label_pairs = {(label_getter(n1), label_getter(n2))
+            label_pairs = {(str(label_getter(n1)), str(label_getter(n2)))
                            for n1, n2 in self.gather_pairs(start_obj)}
         else:
-            label_pairs = {tuple(sorted((label_getter(n1), label_getter(n2))))
+            label_pairs = {tuple(sorted((str(label_getter(n1)), str(label_getter(n2)))))
                            for n1, n2 in self.gather_pairs(start_obj)}
 
         save_graph_image(name=self.name,

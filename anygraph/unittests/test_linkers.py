@@ -652,8 +652,6 @@ class TestDoubleLinkers(unittest.TestCase):
         ann.prevs.include(pete)
         pete.nexts.include(howy, bob)
 
-        print(Test.nexts.gather(bob))
-
         assert Test.nexts.gather(bob) == [bob, ann, pete, howy]
 
     def test_gather_pairs_directed(self):
@@ -841,8 +839,27 @@ class TestDoubleLinkers(unittest.TestCase):
             if len(visited) == 5:
                 break
 
-        print(visited)
         assert len(set(visited)) == 2
+
+    def test_endpoints(self):
+
+        class Test(object):
+            nexts = Many(install=True)
+
+            def __init__(self, name):
+                self.name = str(name)
+
+            def __repr__(self):
+                return self.name
+
+        nodes = [Test(i) for i in range(7)]
+
+        for i, node1 in enumerate(nodes):
+            for j, node2 in enumerate(nodes):
+                if j in (i + 1, i + 2):
+                    node1.nexts.include(node2)
+
+        assert nodes[0].endpoints() == [nodes[-1]]
 
     def test_install_one(self):
         class TestMany(object):
@@ -889,6 +906,23 @@ class TestDoubleLinkers(unittest.TestCase):
         assert bob.shortest_path(ann) == [bob, ann]
         assert bob.in_cycle()
 
+    def test_install_error(self):
+        with self.assertRaises(RuntimeError):
+            class TestMany(object):
+                nexts = Many(install=True)
+                prevs = Many(install=True)
+
+    def test_install_some(self):
+        class Test(object):
+            nexts = Many(install=('iterate',))
+
+        t1 = Test()
+        t2 = Test()
+        t1.nexts.include(t2)
+        assert list(t1.iterate()) == [t1, t2]
+        with self.assertRaises(AttributeError):
+            t1.in_cycle()
+
     def test_install_non_directed(self):
 
         class Friend(object):
@@ -932,7 +966,6 @@ class TestDoubleLinkers(unittest.TestCase):
             print(error)
 
     def test_undirected_image(self):
-
         names = ('ann', 'bob', 'fred', 'betty', 'eric', 'charley', 'claudia', 'lars', 'jan', 'imogen')  # len() == 10
 
         class Person(object):
@@ -943,7 +976,7 @@ class TestDoubleLinkers(unittest.TestCase):
 
         nodes = [Person(name) for name in names]
 
-        for _ in range((len(names)*len(names))//3):
+        for _ in range((len(names) * len(names)) // 3):
             person1 = choice(nodes)
             person2 = choice(nodes)
             if person1 is not person2:
@@ -953,7 +986,3 @@ class TestDoubleLinkers(unittest.TestCase):
             nodes[0].save_image('/data/friends.png', label_getter=lambda obj: obj.name, view=False)
         except RuntimeError as error:  # graphviz not installed
             print(error)
-
-
-
-

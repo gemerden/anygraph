@@ -1,18 +1,18 @@
 # Anygraph
 
-_The easiest way to construct and use graphs in Python_
+_The easiest way to construct and use graphs in Python_.
+
+
+
+![nexts](nexts.png)
 
 ## Introduction
 
-Graphs are a powerful tool to handle software challenges. They are used in many software implementations, varying from file systems to web analysis tools, game engines to parsers and routers to state machines (not all implementation call them graphs, but they are). When you want to use a graph or extend the functionality of a graph, it requires a lot of relatively complex coding. But what if you could standardize the way graphs are built, with a standardized interface (still using you own names)? What if this standardization can be used to implement standard re-usable algorithms, like shortest path, traversal and updates. Anygraph does this for you, and implements some of the standard algorithms associated with graphs (new algorithms will be added over time).    
-
-Graphs and especially double-linked graphs (with relations going for- and backwards) are easy to get wrong. After having written a number of tree and other graph libraries, usually as mixin classes, I found a different solution that has a number of advantages. Is consists of only 2 classes: `One` and `Many` and only a few optional parameters. With these classes you can create many types of graph, which in turn opens the way to a number of (included) algorithms associated with graphs and graph traversal.    
+Graphs are used in many software implementations, varying from file systems to web analysis tools, game engines to parsers and routers to state machines (not all implementation call them graphs, but they are). Graphs and especially double-linked graphs (with relations going for- and backwards) are easy to get wrong. After having written a number of tree and other graph libraries, usually as mixin classes, I found a different solution that has a number of advantages. Is consists of only 2 classes: `One` and `Many` and only a few optional parameters. With these classes you can create many types of graph, which in turn opens the way to a number of (included) algorithms associated with graphs and graph traversal.    
 
 Alternatives that I could find on GitHub or PYPI did not meet my requirements, either being inflexible/more coupled (e.g. requiring inheritance), or missing easy-to-find documentation.
 
-_Anygraph_ is a very easy-to-use library to add _single_ and _double sided_ relationships between objects. It can be used to build _trees_, _directed_ and _non-directed graphs_, _cyclic_ and _non-cyclic graphs_. It also supports mixing many-to-many, many-to-one and one-to-one relationships.
-
-_Anygraph_ also includes methods/algorithms for:
+_Anygraph_ can be used to build _trees_, _directed_ and _non-directed graphs_, _cyclic_ and _non-cyclic graphs_. It also supports mixing many-to-many, many-to-one and one-to-one relationships. It makes graph construction trivial and includes methods/algorithms for:
 
 * Depth and breadth-first iteration,
 * _Building_ a graph from any relationship between objects, of the same or different classes,
@@ -33,7 +33,7 @@ Anygraph can be installed using pip:
 
 `> pip install anygraph`
 
-Anygraph has no dependencies. It runs on Python 3.6 and higher.
+Anygraph has no dependencies (apart from graphviz if you want to draw a graph). It runs on Python 3.6 and higher.
 
 ## Testing
 
@@ -65,8 +65,8 @@ class TreeNode(object):  # a  double-linked tree graph
     children = Many('parent')
 
 class Link(object): # or a  double-linked chain of objects
-    next_link = One('prev_link')
-    prev_link = One('next_link')
+    next = One('prev')
+    prev = One('next')
 ```
 This also means that you can easily add a graph structure to existing objects, just by adding a class attribute. Note that any names can be used, names like 'parent' are used for clarity.
 
@@ -96,6 +96,28 @@ In short: changes to a `One` or `Many` double linked relationship will always **
 * A `Many` relationship supports the same methods and operations as the immutable abc.Set + `.include(*nexts), .exlude(*nexts), clear()` and assignment of an iterable  (e.g. `node.children = [child1, child2]`) and deletion (e.g. `del node.children`).  
 
 Note that the insertion order of the children is maintained; the underlying data-structure is a `dict`, not a `set`. Any object can be used as node in the graph, not only objects that are hashable. 
+
+### Installing a Graph
+
+In many examples below, you see calls like `Person.friends.iterate(person_instance, ...)`. This might seem a bit too complicated for general use (there is a reason though, see below). To be able to make the calls simpler and more intuitive you can install a graph attribute:
+
+```python
+class Person(object):
+    friends = Many('friends', install=True)  # 'install' works for all types of graph
+        
+bob = Person()
+ann = Person()
+bob.friends = [ann]
+
+# now you can (e.g.):
+assert list(bob.iterate()) ==  [bob, ann]	 # instead of Person.friends.iterate(bob)
+assert bob.shortest_path(ann) == [bob, ann]  # instead of Person.friends.shortest_path(bob, ann)
+assert bob.in_cycle()						 # instead of Person.friends.in_cycle(bob)
+```
+
+This works for all methods on the graphs described in this readme.
+
+*Note*: The reason the graph is not installed by default is that if there are multiple graph attributes, it is unclear which graph should be used in the methods installed (should `.iterate()` follow the parent or the children nodes?). This means you can only install one graph on a class. If you try to install more, a `ValueError` is raised.
 
 ### Cycles in Graphs
 
@@ -151,28 +173,6 @@ At the bottom of the chapter there are some more samples:
 * Using `on_link(...)` and `on_unlink(...)` callbacks to add do extra logic when nodes are linked or unlinked.
 
 Note that all these methods are called as e.g. `Person.friends.some_method(start_obj, ...)`; on the `Person` class, not on an instance of `Person`. This is inherent to the use of descriptors. 
-
-### Installing a Graph
-
-In many examples below, you see calls like `Person.friends.iterate(person_instance, ...)`. This might seem a bit too complicated for general use (there is a reason though, see below). To be able to make the calls simpler and more intuitive you can install a graph attribute:
-
-```python
-class Person(object):
-    friends = Many('friends', install=True)  # 'install' works for all types of graph
-        
-bob = Person()
-ann = Person()
-bob.friends = [ann]
-
-# now you can (e.g.):
-assert list(bob.iterate()) ==  [bob, ann]	 # instead of Person.friends.iterate(bob)
-assert bob.shortest_path(ann) == [bob, ann]  # instead of Person.friends.shortest_path(bob, ann)
-assert bob.in_cycle()						 # instead of Person.friends.in_cycle(bob)
-```
-
-This works for all methods on the graphs described in this readme.
-
-*Note*: The reason the graph is not installed by default is that if there are multiple graph attributes, it is unclear which graph should be used in the methods installed (should `.iterate()` follow the parent or the children nodes?). This means you can only install one graph on a class. If you try to install more, a `ValueError` is raised.
 
 ### Graph Iteration
 
@@ -377,28 +377,27 @@ class Edge(object):  # an edge only connects to one node on each end
 
 ### Creating an Image
 
-Graphs can now be visualized in an image file of different formats:
+Graphs can now be visualized in an image file of different formats: 
 
 ```python
 class Person(object):
     friends = Many('friends', install=True)
-
-    def __init__(self, name):
-
+    
+	def __init__(self, name):
         self.name = name
 
-
 people = create_and_connect_people()
-Person.friends.save_image(people[0], 'friends.png', label_getter=lambda obj: obj.name, view=True)
+Person.friends.save_graph_image(people[0], 'friends.png', label_getter=lambda obj: obj.name, view=True)
 # or
-people[0].save_image('friends.png', label_getter=lambda obj: obj.name, view=True)  # because the friends 
+people[0].save_graph_image('friends.png', label_getter=lambda obj: obj.name, view=True) # because the friends 
 ```
 
 * The first argument (in this case `people[0]`) is the entry point of the graph to be drawn,
 * The second (`friends.png`) is the filename the image will be saved to; the extension determines the format,
 * `label_getter` is a function that gets the label from the node, it must return the text to be shown in the nodes,
 * `view` indicates whether the file should be opened after generation in the registered program for the file name extension,
-* `graphviz` is used and must be installed (see  [graphviz](https://graphviz.readthedocs.io/en/stable/manual.html)). More info on file formats, etc. can be found there as well.
+* `graphviz` is used and must be installed (see  [graphviz](https://graphviz.readthedocs.io/en/stable/manual.html)). More info on file formats, etc. can be found there as well,
+* You can see an example image at the start of this readme.
 
 ## Authors
 

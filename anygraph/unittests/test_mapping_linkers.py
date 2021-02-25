@@ -554,8 +554,6 @@ class TestDoubleLinkers(unittest.TestCase):
         ann.prevs.include(pete)
         pete.nexts.include(howy, bob)
 
-        print(Test.nexts.gather(bob))
-
         assert Test.nexts.gather(bob) == [bob, ann, pete, howy]
 
 
