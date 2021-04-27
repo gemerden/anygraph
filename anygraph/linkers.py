@@ -330,17 +330,17 @@ class BaseLinker(object):
          Finds the shortest path through the graph from start_obj to target_obj
         :param start_obj: node to start from
         :param target_obj: node to which the path must be calculated
-        :param get_cost(node, next_node): cost function: must return cost for following edge between node and next_node. Default
+        :param get_cost(node, next_node): cost function: must return cost for edge between node and next_node. Default
             results in a shortest path defined by the number of edges between start and end.
-        :param heuristic(node, target_node): optional heuristic function to calculate an under estimate of the remaining
-            cost from a node to the target node (often resulting in faster path_finding, using A*).
+        :param heuristic(node, target_node): optional heuristic function to calculate an lower estimate of the remaining
+            cost from a node to the target node (using A* algorithm, often resulting in faster path_finding).
         :return: list of nodes of the shortest path
         """
         return Iterator(self.name).shortest_path(start_obj, target_obj,
                                                  get_cost=get_cost,
                                                  heuristic=heuristic)
 
-    def save_image(self, start_obj, filename, label_getter=lambda obj: obj.name,
+    def save_image(self, start_obj, filename, label_getter=lambda obj: str,
                    view=False, fontsize='10', fontname='Arial bold', **options):
 
         if self.is_directed:
