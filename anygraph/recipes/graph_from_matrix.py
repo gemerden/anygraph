@@ -63,7 +63,7 @@ if __name__ == '__main__':
 
     print_matrix(matrix)
 
-    """ and check whether the reversed connections are there """
+    """ and check whether the reversed connections are present """
 
     def check_reverse(nodes, matrix):
         assert len(nodes) == len(matrix)
