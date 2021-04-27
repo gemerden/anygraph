@@ -1,8 +1,6 @@
 import random
 from contextlib import contextmanager
-from heapq import heappop, heappush, heappushpop, heapreplace, heapify
 from time import perf_counter
-from types import MethodType
 
 
 def unique_name(space, base, name=None):
@@ -41,11 +39,6 @@ def stopwatch(timer=perf_counter):
     t = timer()
     yield lambda: delta
     delta = timer() - t  # fixed on context exit
-
-
-def bind_builtin_to_instance(obj, **builtin_funcs):
-    for name, func in builtin_funcs.items():
-        setattr(obj, name, MethodType(func, obj))
 
 
 def save_graph_image(name, pairs, directed=True, filename='png', view=True, **options):
