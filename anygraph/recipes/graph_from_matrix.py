@@ -22,7 +22,7 @@ if __name__ == '__main__':
         return random.random() < prob
 
     def create_matrix(size):
-        """ create a matrix with reandom booleans indicating whether the corresponding nodes must be connected """
+        """ create a matrix with random booleans indicating whether the corresponding nodes must be connected """
         matrix = []
         for i in range(size):
             matrix.append([flip_coin() for _ in range(size)])
