@@ -187,7 +187,7 @@ class BaseLinker(object):
         except KeyError:
             return self._init(obj)  # initializes attribute on first access
 
-    def iterate(self, start_obj, cyclic=False, breadth_first=False):
+    def iterate(self, start_obj, cyclic=False, breadth_first=False, stop=lambda obj: False):
         """
         iterate through the graph
         :param start_obj: starting object from which the graph is followed
@@ -195,7 +195,7 @@ class BaseLinker(object):
         :param breadth_first: depth_first iteration if false (default) else breadth_first iteration
         :yield: nodes in the graph
         """
-        yield from Iterator(self.name).iterate(start_obj, cyclic=cyclic, breadth_first=breadth_first)
+        yield from Iterator(self.name).iterate(start_obj, cyclic=cyclic, breadth_first=breadth_first, stop=stop)
 
     __call__ = iterate  # shortcut to iteration
 

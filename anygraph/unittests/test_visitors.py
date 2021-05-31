@@ -13,6 +13,9 @@ class TestPropagator(unittest.TestCase):
         def __init__(self, name):
             self.name = name
 
+        def __repr__(self):
+            return self.name
+
     def create_objects(self, count=10):
         objs = [self.TestMany('bob_' + str(i)) for i in range(count)]
         for i, obj in enumerate(objs):
@@ -35,6 +38,26 @@ class TestPropagator(unittest.TestCase):
 
             iterator = Iterator('prevs')
             assert len(list(iterator.iterate(objs[count - 1], breadth_first=breadth_first))) == count
+
+    def test_stop_iteration(self):
+        count = 10
+        objs = [self.TestMany('bob_' + str(i)) for i in range(count)]
+        objs[0].nexts.include(*objs[1:3])
+        objs[1].nexts.include(*objs[3:6])
+        objs[2].nexts.include(*objs[6:9])
+        objs[9].prevs.include(objs[5], objs[6])
+        some_objs = set(objs[5:7])
+
+        def stop(obj):
+            return obj in some_objs
+
+        for breadth_first in [False, True]:
+            result = list(TestPropagator.TestMany.nexts.iterate(objs[0], breadth_first=breadth_first, stop=stop))
+            assert len(result) == 9
+
+            result = list(TestPropagator.TestMany.prevs.iterate(objs[-1], breadth_first=breadth_first, stop=stop))
+            assert len(result) == 3
+
 
     def test_endpoint(self):
         class StartPoint(object):
