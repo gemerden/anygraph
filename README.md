@@ -196,6 +196,14 @@ This will iterate through the graph, by default not in cycles and depth-first. T
 for friend in Person.friends(bob, cyclic=True, breadth_first=True):
     print(friend)
 ```
+It is also possible to stop iterating through the graph at specific nodes (e.g. usable in backtracking algoritms), using the `stop(obj)` callback.
+
+```python
+for friend in Person.friends(bob, stop=lambda node: node is ann):
+    print(friend)
+```
+This will only prevent going deeper into the graph from the nodes meeting the stop=-criterium.
+
 If nodes are not reachable from the starting node through the graph, they will not show up during iteration. If you wan to check reachability, do `Person.friends.reachable(from_person, to_person)`, in the example above.
 
 ### Building a Graph

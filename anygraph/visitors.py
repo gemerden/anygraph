@@ -31,16 +31,16 @@ class BaseIterator(object):
                     except TypeError:
                         yield attr
 
-    def iterate(self, obj, cyclic=False, breadth_first=False):
+    def iterate(self, obj, cyclic=False, breadth_first=False, stop=lambda obj: False):
         registry = None if cyclic else set()
         if breadth_first:
-            yield from self._breadth_first(obj, reg=registry)
+            yield from self._breadth_first(obj, stop=stop, reg=registry)
         else:
-            yield from self._depth_first(obj, reg=registry)
+            yield from self._depth_first(obj, stop=stop, reg=registry)
 
     __call__ = iterate
 
-    def _depth_first(self, obj, reg):
+    def _depth_first(self, obj, stop, reg):
         """ does not use recursion to prevent running out of the callstack """
         if reg is not None:
             reg.add(id(obj))
@@ -48,6 +48,8 @@ class BaseIterator(object):
         while len(stack):
             obj = stack.pop()
             yield obj
+            if stop(obj):
+                continue
             objs = list(self.iter_object(obj))
             if reg is None:
                 stack.extend(reversed(objs))
@@ -57,13 +59,15 @@ class BaseIterator(object):
                         reg.add(id(next_obj))
                         stack.append(next_obj)
 
-    def _breadth_first(self, obj, reg):
+    def _breadth_first(self, obj, stop, reg):
         if reg is not None:
             reg.add(id(obj))
         queue = deque([obj])
         while len(queue):
             obj = queue.popleft()
             yield obj
+            if stop(obj):
+                continue
             for next_obj in self.iter_object(obj):
                 if reg is None:
                     queue.append(next_obj)
