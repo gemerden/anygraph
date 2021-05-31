@@ -1,5 +1,6 @@
 """
-Here we will show how to build a graph from a class inheritance structure. Since we will n change the class of classes (type), we will use a wrapper to do this.
+Here we will show how to build a graph from a class inheritance structure. Since we will n change the class of classes (type),
+    we will use a wrapper to do this.
 """
 from anygraph import Many
 
@@ -7,6 +8,7 @@ from anygraph import Many
 First we define the wrapper class; because we create instances of ClassWrapper on the flight; 
 to detect if the class was already encountered, we need to use a custom get_id function.
 """
+
 
 class ClassWrapper(object):
     """ add the graph definition to the wrapper class """
@@ -22,6 +24,8 @@ class ClassWrapper(object):
 
 
 """ then we define how to get from a wrapped class to its base classes"""
+
+
 def get_bases(wrapper):
     """ pre-wraps the classes to be able to use 'base_classes' and 'sub_classes' """
     for cls in wrapper.wrapped.__bases__:
@@ -29,6 +33,8 @@ def get_bases(wrapper):
 
 
 """ and we are ready to build the graph """
+
+
 def build(cls):
     wrapped_class = ClassWrapper(cls)
     ClassWrapper.base_classes.build(wrapped_class, key=get_bases)
@@ -37,6 +43,7 @@ def build(cls):
 
 if __name__ == '__main__':
     """ create some class hierarchy: """
+
 
     class A(object): pass
     class B(A): pass
@@ -59,7 +66,3 @@ if __name__ == '__main__':
     Note that iterating over base_classes depth- or breadth-first, does not 
     always produce the same order as the mro() algorithm used by python 
     """
-
-
-
-
