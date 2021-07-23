@@ -399,15 +399,15 @@ class BaseLinker(object):
 
     def _on_link(self, obj, target, _remote=False):
         if self._do_on_link:
-            return self._do_on_link(obj, target)
+            self._do_on_link(obj, target)
         if self.reverse_name and not _remote:
-            return self._reverse(target)._on_link(target, obj, True)
+            self._reverse(target)._on_link(target, obj, True)
 
     def _on_unlink(self, obj, target, _remote=False):
         if self._do_on_unlink:
-            return self._do_on_unlink(obj, target)
+            self._do_on_unlink(obj, target)
         if self.reverse_name and not _remote:
-            return self._reverse(target)._on_unlink(target, obj, True)
+            self._reverse(target)._on_unlink(target, obj, True)
 
     def _init(self, obj):
         raise NotImplementedError
