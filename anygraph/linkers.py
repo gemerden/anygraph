@@ -13,6 +13,7 @@ class BaseDelegate(object):
         self.targets = {}
         self.owner = owner
         self.linker = linker
+        self.get_id = self.linker.get_id
 
     def __len__(self):
         return len(self.targets)
@@ -49,7 +50,7 @@ class DelegateSet(BaseDelegate, Set):
         return iter(self.targets.values())
 
     def __contains__(self, target):
-        return id(target) in self.targets
+        return self.get_id(target) in self.targets
 
     def __getitem__(self, index):
         """ slow way to getting access to specific targets """
@@ -59,10 +60,10 @@ class DelegateSet(BaseDelegate, Set):
         raise IndexError(str(index))
 
     def _set(self, target):
-        self.targets[id(target)] = target
+        self.targets[self.get_id(target)] = target
 
     def _del(self, target):
-        self.targets.pop(id(target), None)
+        self.targets.pop(self.get_id(target), None)
 
     def __str__(self):
         return f"{{{', '.join(map(str, self))}}}"
@@ -146,7 +147,7 @@ class BaseLinker(object):
         self._do_on_link = on_link
         self._do_on_unlink = on_unlink
         self._install = install
-        self._get_id = get_id or self.get_id
+        self.get_id = get_id or self.get_id
         self.name = None
 
     @property
@@ -220,7 +221,7 @@ class BaseLinker(object):
         """
         Gather all nodes in a graph, going forward and backward if reverse_name is defined.
         """
-        get_id = self._get_id
+        get_id = self.get_id
 
         forw_iterator = Iterator(self.name)
         back_iterator = Iterator(self.reverse_name) if self.reverse_name else None
@@ -246,7 +247,7 @@ class BaseLinker(object):
         """
         Gather all connected pairs of nodes in a graph, going forward, and backward if reverse_name is defined.
         """
-        get_id = self._get_id
+        get_id = self.get_id
 
         forw_iterator = Iterator(self.name)
         back_iterator = Iterator(self.reverse_name) if self.reverse_name else None
@@ -312,7 +313,7 @@ class BaseLinker(object):
 
         def visit(obj):
             nonlocal cyclic
-            obj_id = self._get_id(obj)
+            obj_id = self.get_id(obj)
             if obj_id in seen:
                 cyclic = True
                 raise StopIteration
@@ -445,7 +446,7 @@ class One(BaseLinker):
         return target is not None and self.__get__(obj) is target
 
     def _build_on_visit(self, key, _reg):
-        get_id = self._get_id
+        get_id = self.get_id
 
         def visit(obj):
             if isinstance(key, str):
@@ -488,7 +489,7 @@ class BaseMany(BaseLinker):
 
     def _build_on_visit(self, key, _reg):
         name = self.name
-        get_id = self._get_id
+        get_id = self.get_id
 
         def visit(obj, key=key):
             if isinstance(key, str):

@@ -1,4 +1,5 @@
 import unittest
+import uuid
 from random import choice
 
 from anygraph import One, Many
@@ -495,6 +496,22 @@ class TestDoubleLinkers(unittest.TestCase):
 
         del bob.nexts
         assert on_unlink_results == [(bob, ann), (bob, pete)]
+
+    def test_custom_id(self):
+        class TestMany(object):
+            nexts = Many('prevs', get_id=lambda obj: hash(obj))
+            prevs = Many('nexts')
+
+            def __init__(self, name):
+                self.name = name
+
+        bob = TestMany('bob')
+        ann = TestMany('ann')
+
+        bob.nexts.include(ann)
+        assert ann in bob.nexts
+        assert bob in ann.prevs
+
 
     def test_visitor(self):
         class TestMany(object):
