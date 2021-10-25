@@ -23,15 +23,15 @@ class BaseDelegate(object):
         for target in targets:
             if target is not None and target not in self.targets.values():
                 self.linker._check(self.owner, target)
-                self.linker._on_link(self.owner, target)
                 self.linker._link(self.owner, target)
+                self.linker._on_link(self.owner, target)
 
     def exclude(self, *targets):
         """ removes and disconnects targets from the object owning this instance (self.owner) """
         for target in targets:
             if target is not None and target in self.targets.values():
-                self.linker._unlink(self.owner, target)
                 self.linker._on_unlink(self.owner, target)
+                self.linker._unlink(self.owner, target)
 
     def clear(self):
         """ removes all targets """
@@ -400,15 +400,15 @@ class BaseLinker(object):
 
     def _on_link(self, obj, target, _remote=False):
         if self._do_on_link:
-            return self._do_on_link(obj, target)
+            self._do_on_link(obj, target)
         if self.reverse_name and not _remote:
-            return self._reverse(target)._on_link(target, obj, True)
+            self._reverse(target)._on_link(target, obj, True)
 
     def _on_unlink(self, obj, target, _remote=False):
         if self._do_on_unlink:
-            return self._do_on_unlink(obj, target)
+            self._do_on_unlink(obj, target)
         if self.reverse_name and not _remote:
-            return self._reverse(target)._on_unlink(target, obj, True)
+            self._reverse(target)._on_unlink(target, obj, True)
 
     def _init(self, obj):
         raise NotImplementedError
@@ -434,13 +434,13 @@ class One(BaseLinker):
         if target is not None:
             if self.reverse_name:
                 self._reverse(target)._unlink(target)
-            self._on_link(obj, target)
             self._link(obj, target)
+            self._on_link(obj, target)
 
     def __delete__(self, obj):
         target = self.__get__(obj)
-        self._unlink(obj, target)
         self._on_unlink(obj, target)
+        self._unlink(obj, target)
 
     def _existing(self, obj, target):
         return target is not None and self.__get__(obj) is target
