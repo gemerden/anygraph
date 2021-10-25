@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='anygraph',
-    version='0.2.4',
+    version='0.2.5',
     description='add any graph structure between classes with 2 simple classes',
     long_description='see <https://github.com/gemerden/anygraph>',  # after long battle to get markdown to work on PyPI
     author='Lars van Gemerden',
