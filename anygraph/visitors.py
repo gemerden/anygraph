@@ -31,6 +31,15 @@ class BaseIterator(object):
                     except TypeError:
                         yield attr
 
+    def walk(self, obj, key, on_visit=None):
+        while True:
+            if on_visit:
+                on_visit(obj)
+            yield obj
+            obj = key(obj)
+            if obj is None:
+                break
+
     def iterate(self, obj, cyclic=False, breadth_first=False):
         registry = None if cyclic else set()
         if breadth_first:
@@ -39,6 +48,21 @@ class BaseIterator(object):
             yield from self._depth_first(obj, reg=registry)
 
     __call__ = iterate
+
+    def shortest_path(self, start_obj, target_obj, get_cost=None, heuristic=None):
+        if get_cost is None:
+            def get_cost(o1, o2):
+                return 0 if o1 is o2 else 1
+        if heuristic:
+            return self._astar(start_obj, target_obj, get_cost, heuristic)
+        else:
+            return self._dijkstra(start_obj, target_obj, get_cost)
+
+    def shortest_paths(self, start_obj, target_objs, get_cost=None, allow_partial=False):
+        if get_cost is None:
+            def get_cost(o1, o2):
+                return 0 if o1 is o2 else 1
+        return self._multi_dijkstra(start_obj, target_objs, get_cost, allow_partial)
 
     def _depth_first(self, obj, reg):
         """ does not use recursion to prevent running out of the callstack """
@@ -72,29 +96,14 @@ class BaseIterator(object):
                         reg.add(id(next_obj))
                         queue.append(next_obj)
 
-    def shortest_path(self, start_obj, target_obj, get_cost=None, heuristic=None):
-        if get_cost is None:
-            def get_cost(o1, o2):
-                return 0 if o1 is o2 else 1
-        if heuristic:
-            return self._astar(start_obj, target_obj, get_cost, heuristic)
-        else:
-            return self._dijkstra(start_obj, target_obj, get_cost)
-
-    def walk(self, obj, key, on_visit=None):
-        while True:
-            if on_visit:
-                on_visit(obj)
-            yield obj
-            obj = key(obj)
-            if obj is None:
-                break
-
-    def _dijkstra(self, start_obj, target_obj, get_cost):
+    def _base_dijkstra(self, start_obj, target_objs, get_cost):
         """
             Pretty standard implementation of Dijkstra, id() is used because not all objects are hashable and
-            the implementation uses a set and dicts.
+            the implementation uses a set and dicts. It uses multiple targets, and is used by the single target
+            version.
         """
+        shortest = []
+        targets = {id(t) for t in target_objs}
         path = {id(start_obj): None}
         cost = {id(start_obj): 0}
         queue = deque([start_obj])
@@ -104,8 +113,11 @@ class BaseIterator(object):
             obj_id = id(obj)
             done[obj_id] = obj
 
-            if obj is target_obj:
-                return self._create_path(obj, path, id_map=done)
+            if obj_id in targets:
+                targets.remove(obj_id)
+                shortest.append(self._create_path(obj, path, id_map=done))
+                if not len(targets):  # all targets have paths
+                    return shortest
 
             for next_obj in self.iter_object(obj):
                 next_id = id(next_obj)
@@ -119,7 +131,27 @@ class BaseIterator(object):
                 path[next_id] = obj_id
                 cost[next_id] = next_cost
                 queue.append(next_obj)
+        return shortest  # there are less paths than targets
+
+    def _dijkstra(self, start_obj, target_obj, get_cost):
+        """
+            see above
+        """
+        results = self._base_dijkstra(start_obj, (target_obj,), get_cost)
+        if results:
+            return results[0]
         return None  # there is no path
+
+    def _multi_dijkstra(self, start_obj, target_objs, get_cost, allow_partial=False):
+        """
+            see above
+        """
+        results = self._base_dijkstra(start_obj, target_objs, get_cost)
+        if len(results) < len(target_objs):
+            if allow_partial:
+                return results
+            return None
+        return results
 
     def _astar(self, start_obj, target_obj, get_cost, heuristic):
         """
