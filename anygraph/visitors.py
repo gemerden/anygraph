@@ -1,5 +1,4 @@
-import random
-from collections import deque
+from collections import deque, Mapping
 from heapq import heappop, heappush
 from operator import attrgetter
 
@@ -22,14 +21,13 @@ class BaseIterator(object):
             if self.raise_on_missing:
                 raise
         else:
-            if attr is not None:
+            if isinstance(attr, Mapping):
+                yield from attr.values()
+            else:
                 try:
-                    yield from attr.values()
-                except AttributeError:
-                    try:
-                        yield from attr
-                    except TypeError:
-                        yield attr
+                    yield from attr
+                except TypeError:
+                    yield attr
 
     def walk(self, obj, key, on_visit=None):
         while True:
