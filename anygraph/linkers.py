@@ -1,6 +1,7 @@
 from collections import deque
 from collections.abc import Set, Mapping
 from functools import partial, wraps
+from operator import attrgetter
 
 from anygraph.tools import unique_name, save_graph_image
 from anygraph.visitors import Iterator, Visitor
@@ -38,10 +39,10 @@ class BaseDelegate(object):
         self.exclude(*self.targets.values())
 
     def _set(self, target):
-        raise NotImplementedError
+        self.targets[self.get_id(target)] = target
 
     def _del(self, target):
-        raise NotImplementedError
+        self.targets.pop(self.get_id(target), None)
 
 
 class DelegateSet(BaseDelegate, Set):
@@ -59,12 +60,6 @@ class DelegateSet(BaseDelegate, Set):
                 return self.targets[key]
         raise IndexError(str(index))
 
-    def _set(self, target):
-        self.targets[self.get_id(target)] = target
-
-    def _del(self, target):
-        self.targets.pop(self.get_id(target), None)
-
     def __str__(self):
         return f"{{{', '.join(map(str, self))}}}"
 
@@ -73,13 +68,6 @@ class DelegateSet(BaseDelegate, Set):
 
 
 class DelegateMap(BaseDelegate, Mapping):
-
-    def __init__(self, owner, linker):
-        super().__init__(owner, linker)
-        self.get_key = linker.get_key
-
-    def __len__(self):
-        return len(self.targets)
 
     def __iter__(self):
         return iter(self.targets)
@@ -95,26 +83,18 @@ class DelegateMap(BaseDelegate, Mapping):
         if isinstance(old_key_or_target, str):
             old_key = old_key_or_target
         else:
-            old_key = self.find_key(old_key_or_target)
+            old_key = self.get_key(old_key_or_target)
         keys = list(self.targets)
         index = keys.index(old_key)
         below = {k: self.targets.pop(k) for k in keys[index + 1:]}
         self.targets[new_key] = self.targets.pop(old_key)
         self.targets.update(below)
 
-    def find_key(self, target):
+    def get_key(self, target):
         """ find the key of a target """
         for key, targ in self.targets.items():
             if target is targ:
                 return key
-
-    def _set(self, target):
-        self.targets[self.get_key(self.owner, target)] = target
-
-    def _del(self, target):
-        for key, targ in self.targets.items():
-            if target is targ:
-                return self.targets.pop(key, None)
 
     def __str__(self):
         return str(self.targets)
@@ -525,17 +505,11 @@ class Many(BaseMany):
 class ManyMap(BaseMany):
     many_class = DelegateMap
 
-    def __init__(self, *args, key_attr='name', **kwargs):
-        super().__init__(*args, **kwargs)
-        self.key_attr = key_attr
-
-    def get_key(self, obj, target):
-        return unique_name(self.__get__(obj),
-                           target.__class__.__name__.lower(),
-                           getattr(target, self.key_attr, None))
+    def __init__(self, *args, key='name', **kwargs):
+        super().__init__(*args, **kwargs, get_id=attrgetter(key))
 
     def _existing(self, obj, target):
-        return target in self.__get__(obj).values()
+        return self.get_id(target) in self.__get__(obj)
 
 
 if __name__ == '__main__':

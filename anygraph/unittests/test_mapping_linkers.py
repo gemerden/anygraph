@@ -25,37 +25,14 @@ class TestLinkers(unittest.TestCase):
 
         assert list(bob.nexts) == ['ann2', 'pete']
 
-        assert bob.nexts.find_key(pete) == 'pete'
-        assert bob.nexts.find_key(ann) == 'ann2'
+        assert bob.nexts.get_key(pete) == 'pete'
+        assert bob.nexts.get_key(ann) == 'ann2'
 
         assert ann in bob.nexts.values()
         assert howy in pete.nexts.values()
         assert howy not in bob.nexts.values()
 
         assert list(TestMany.nexts.iterate(bob)) == [bob, ann, pete, howy]
-
-    def test_unnamed(self):
-        class Test(object):
-            nexts = ManyMap()
-
-        bob = Test()
-        ann = Test()
-        pete = Test()
-        howy = Test()
-
-        bob.nexts.include(ann, pete)
-        pete.nexts.include(howy)
-
-        assert list(bob.nexts) == ['test_0', 'test_1']
-        assert list(pete.nexts) == ['test_0']
-
-        bob.nexts.exclude(ann)
-        assert list(bob.nexts) == ['test_1']
-
-        bob.nexts.include(ann)
-        assert list(bob.nexts) == ['test_1', 'test_0']
-
-        assert list(Test.nexts.iterate(bob)) == [bob, pete, howy, ann]
 
     def test_cyclic(self):
         class TestMany(object):

@@ -1,6 +1,5 @@
 import random
 from contextlib import contextmanager
-from heapq import heappop, heappush, heappushpop, heapreplace, heapify
 from time import perf_counter
 from types import MethodType
 
