@@ -163,6 +163,7 @@ These methods are implemented on both `One` and `many`:
 * `.find(start_obj, filter)`: run through the graph and gather and return a list of nodes for which `filter(obj)` returns `True`,
 * `.visit(start_obj, on_visit, cyclic=False, breadth_first=False)`: run through the graph and apply on_visit to each node that is encountered,
 * `.shortest_path(start_obj, target_obj, get_cost=None, heuristic=None)`: returns the shortest path using A*, or Dijkstra if a heuristic is missing,
+* `.shortest_paths(start_obj, target_obj, get_cost=None, allow_partial=False)`: same as 'shortest_path' but with multiple targets,
 * `.walk(start_obj, key, on_visit=None)`: iterate over the graph using a key-function that returns the next node from `key(node)`,
 * `.endpoints(start_obj)`: iterate over the graph and gather the nodes that do not have a next node,
 * `.gather(start_obj)`: gather all nodes in the graph reachable from `start_obj` in a list, following the forward and reverse (if present) edges.
@@ -240,8 +241,8 @@ Items.children.build(items_obj, key='__iter__')  # '__iter__' is the default
 Items.children.build(items_obj, key=lambda obj: obj.items)
 
 # and now
-assert all(item.parent is items_obj for item in items_obj)
-assert items[0].siblings() == items[1:]
+assert all(item.parent is items_obj for item in items_obj)  # works now
+assert items[0].siblings() == items[1:]  # works now
 ```
 This makes all objects iteratively encountered by `build()` be part of the graph, to be iterated (depth- or breadth-first), traversed upward and downward; it makes the `Item.siblings()` method work. As long as a iterable relationship between objects exists or can be created, a double-linked graph can be built automatically.
 
@@ -276,7 +277,8 @@ class Node(object):
 
 nodes = create_and_connect_nodes()  # some graph is constructed
 
-# we need a cost function to be able to define shortest. The function below minimizes the number of edges in the path.
+# we need a cost function to be able to define shortest. The function below minimizes the number of edges in the path. This
+# function is the default, but for this example we will set it explicitly.
 def cost(node1, node2):
     if node1 is node2:
         return 0

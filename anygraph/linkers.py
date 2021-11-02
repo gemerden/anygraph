@@ -110,7 +110,7 @@ class BaseLinker(object):
     get_id = id  # default
 
     _installables = ('iterate', 'visit', 'build', 'gather', 'gather_pairs', 'find', 'reachable', 'walk',
-                     'endpoints', 'is_cyclic', 'in_cycle', 'shortest_path', 'save_image')
+                     'endpoints', 'is_cyclic', 'in_cycle', 'shortest_path', 'shortest_paths', 'save_image')
 
     def __init__(self, reverse_name=None, cyclic=True, to_self=True, on_link=None, on_unlink=None, install=False, get_id=None):
         """
