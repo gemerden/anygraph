@@ -321,6 +321,23 @@ class BaseLinker(object):
                                                  get_cost=get_cost,
                                                  heuristic=heuristic)
 
+    def shortest_paths(self, start_obj, target_objs, get_cost=None, allow_partial=False):
+        """
+         Finds the shortest paths through the graph from start_obj to all target_objs
+        :param start_obj: node to start from
+        :param target_objs: a sequence of nodes to which the paths must be calculated
+        :param get_cost(node, next_node): cost function: must return cost for following edge between node and next_node.
+            Default results in a shortest path defined by the number of edges between start and end
+        :param allow_partial: indicates whether result should be returned even if not all targets are reachable
+        :return: a list of lists of nodes of the shortest paths
+
+        Note that there is no heuristic option, since the heuristic version of the algorithm has no speed advantage for
+            multiple targets (you might as well run the single target version multiple times.
+        """
+        return Iterator(self.name).shortest_paths(start_obj, target_objs,
+                                                  get_cost=get_cost,
+                                                  allow_partial=allow_partial)
+
     def save_image(self, start_obj, filename, label_getter=lambda obj: obj.name,
                    view=False, fontsize='10', fontname='Arial bold', **options):
 

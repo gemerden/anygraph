@@ -182,7 +182,8 @@ class BaseIterator(object):
 
                 path[next_id] = obj_id
                 cost[next_id] = next_cost
-                heappush(heap, (next_cost + from_cost, next_id, next_obj))  # next_id because obj's do not always have '<' operator
+                heappush(heap,
+                         (next_cost + from_cost, next_id, next_obj))  # next_id because obj's do not always have '<' operator
         return None  # there is no path
 
     def _create_path(self, obj, id_path, id_map):
@@ -213,6 +214,7 @@ class Visitor(BaseIterator):
 
 class BaseVisitor(BaseIterator):
     """ baseclass to run through a graph and apply changes to nodes or gather information """
+
     def get_store(self):
         """ override to create argument for visit function to store results """
         return None
@@ -241,8 +243,10 @@ class BaseVisitor(BaseIterator):
         """ optionally post_process the store before returning it """
         return store
 
+
 class BaseFinder(object):
     """ adds filter to instance to be used in search like sub-classes """
+
     def __init__(self, prop_name, filter):
         super().__init__(prop_name, cyclic=False)
         self.filter = filter
@@ -250,12 +254,14 @@ class BaseFinder(object):
 
 class Has(BaseFinder, BaseIterator):
     """ return whether there are any nodes that pass .filter """
+
     def __call__(self, obj, breadth_first=False):
         return any(map(self.filter, self.iterate(obj, breadth_first=breadth_first)))
 
 
 class Find(BaseFinder, BaseVisitor):
     """ gather all nodes that pass .filter """
+
     def get_store(self):
         return []
 
@@ -266,6 +272,7 @@ class Find(BaseFinder, BaseVisitor):
 
 class FindOne(BaseFinder, BaseVisitor):
     """ return the first node that passes filter """
+
     def visit(self, obj, store):
         if self.filter(obj):
             return obj
@@ -273,11 +280,10 @@ class FindOne(BaseFinder, BaseVisitor):
 
 class GetEndpoints(BaseVisitor):
     """ gather all nodes that is an endpoint in the graph """
+
     def get_store(self):
         return []
 
     def visit(self, obj, store):
         if not list(self.iter_object(obj)):
             store.append(obj)
-
-
