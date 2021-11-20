@@ -112,7 +112,7 @@ class BaseLinker(object):
     _installables = ('iterate', 'visit', 'build', 'gather', 'gather_pairs', 'find', 'reachable', 'walk',
                      'endpoints', 'is_cyclic', 'in_cycle', 'shortest_path', 'shortest_paths', 'save_image')
 
-    def __init__(self, reverse_name=None, cyclic=True, to_self=True, on_link=None, on_unlink=None, install=False, get_id=None):
+    def __init__(self, reverse_name=None, cyclic=True, to_self=True, on_link=None, on_unlink=None, install=False, get_id=None, **kwargs):
         """
         :param reverse_name: optional name of the reverse relationship
         :param cyclic: whether the graph is allowed to be cyclic
@@ -121,6 +121,7 @@ class BaseLinker(object):
         :param on_unlink(obj, next_obj): optional callback called just before a connection is broken
         :param get_id(obj): optional alternative callback to uniquely identify nodes
         """
+        super().__init__(**kwargs)
         self.reverse_name = reverse_name
         self.cyclic = cyclic
         self.to_self = to_self
