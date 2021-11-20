@@ -27,7 +27,8 @@ class BaseIterator(object):
                 try:
                     yield from attr
                 except TypeError:
-                    yield attr
+                    if attr is not None:
+                        yield attr
 
     def walk(self, obj, key, on_visit=None):
         while True:
