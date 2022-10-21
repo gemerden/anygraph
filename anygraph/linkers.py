@@ -1,9 +1,9 @@
 from collections import deque
 from collections.abc import Set, Mapping
-from functools import partial, wraps
+from functools import wraps
 from operator import attrgetter
 
-from anygraph.tools import unique_name, save_graph_image
+from anygraph.tools import save_graph_image
 from anygraph.visitors import Iterator, Visitor
 
 

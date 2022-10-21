@@ -385,7 +385,7 @@ Graphs can now be visualized in an image file of different formats:
 class Person(object):
     friends = Many('friends', install=True)
     
-	def __init__(self, name):
+    def __init__(self, name):
         self.name = name
 
 people = create_and_connect_people()
