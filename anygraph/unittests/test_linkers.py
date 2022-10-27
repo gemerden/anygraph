@@ -512,7 +512,6 @@ class TestDoubleLinkers(unittest.TestCase):
         assert ann in bob.nexts
         assert bob in ann.prevs
 
-
     def test_visitor(self):
         class TestMany(object):
             nexts = Many('prevs')
@@ -1003,3 +1002,7 @@ class TestDoubleLinkers(unittest.TestCase):
             nodes[0].save_image('/data/friends.png', label_getter=lambda obj: obj.name, view=False)
         except RuntimeError as error:  # graphviz not installed
             print(error)
+
+
+if __name__ == "__main__":
+    unittest.main()

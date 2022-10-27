@@ -108,14 +108,9 @@ class testPathMethods(unittest.TestCase):
             def __str__(self):
                 return f"Node({self.index[0]}, {self.index[1]})"
 
-        def create_nodes(count):
-            nodes = []
-            for i in range(count):
-                for j in range(count):
-                    nodes.append(Node(i, j))
-            return nodes
+            __repr__ = __str__
 
-        def connect_nodes(nodes):
+        def random_connect_nodes(nodes):
             nodes_dict = {n.index: n for n in nodes}
             for (i, j), node in nodes_dict.items():
                 for di, dj in product([-1, 0, 1], [-1, 0, 1]):
@@ -125,16 +120,18 @@ class testPathMethods(unittest.TestCase):
                     except KeyError:
                         pass
 
-        size = 10
-        nodes = create_nodes(size)
-        connect_nodes(nodes)
-
         def weight(node1, node2):
             i1, j1 = node1.index
             i2, j2 = node2.index
             return abs(i1 - i2) + abs(j1 - j2)
 
-        path = Node.nexts.shortest_path(nodes[0], nodes[-1], get_cost=weight, heuristic=weight)
-        if path:  # occasionally there is no path due to random matrix
-            for o1, o2 in chained(path):
-                assert o2 in o1.nexts
+        count = 10
+        nodes = [Node(i, j) for i in range(count) for j in range(count)]
+
+        path = None
+        while not path:   # occasionally there is no path due to random matrix
+            random_connect_nodes(nodes)
+            path = Node.nexts.shortest_path(nodes[0], nodes[-1], get_cost=weight, heuristic=weight)
+            if path:
+                for o1, o2 in chained(path):
+                    assert o2 in o1.nexts
